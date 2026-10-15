@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2022 Intel Corporation
+// Copyright (C) 2018-2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 //
 
@@ -57,7 +57,7 @@ protected:
      * @param results_fetcher Callback to fetch inference results
      */
     void InferBatch(const std::vector<cv::Mat>& frames,
-                    const std::function<void(const ov::Tensor&, size_t)>& results_fetcher) const;
+                    const std::function<void(ov::Tensor, size_t)>& results_fetcher) const;
 
     /** @brief Config */
     Config config;

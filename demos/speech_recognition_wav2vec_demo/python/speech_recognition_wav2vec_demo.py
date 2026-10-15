@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
- Copyright (C) 2021-2022 Intel Corporation
+ Copyright (C) 2021-2024 Intel Corporation
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import sys
 import numpy as np
 import wave
 
-from openvino.runtime import Core, get_version, PartialShape
+from openvino import Core, get_version, PartialShape
 
 log.basicConfig(format='[ %(levelname)s ] %(message)s', level=log.DEBUG, stream=sys.stdout)
 
@@ -36,9 +36,9 @@ def build_argparser():
     parser.add_argument('-m', '--model', help='Required. Path to an .xml file with a trained model.', required=True)
     parser.add_argument('-i', '--input', help="Required. Path to an audio file in WAV PCM 16 kHz mono format.", required=True)
     parser.add_argument('-d', '--device', default='CPU',
-                        help="Optional. Specify the target device to infer on, for example: "
-                             "CPU, GPU, HDDL, MYRIAD or HETERO. "
-                             "The demo will look for a suitable OpenVINO Runtime plugin for this device. Default value is CPU.")
+                        help="Optional. Specify a device to infer on (the list of available devices is shown below). Use "
+                        "'-d HETERO:<comma-separated_devices_list>' format to specify HETERO plugin. Use "
+                        "'-d MULTI:<comma-separated_devices_list>' format to specify MULTI plugin. Default is CPU")
     parser.add_argument('--vocab', help='Optional. Path to an .json file with encoding vocabulary.')
     parser.add_argument('--dynamic_shape', action='store_true',
                         help='Optional. Using dynamic shapes for inputs of model.')

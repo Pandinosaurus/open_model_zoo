@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Intel Corporation
+# Copyright (c) 2022-2024 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,5 +38,90 @@ model_optimizer_args:
   - --tensorflow_object_detection_api_pipeline_config=$dl_dir/ssdlite_mobilenet_v2_coco_2018_05_09/pipeline.config
   - --input_model=$dl_dir/ssdlite_mobilenet_v2_coco_2018_05_09/frozen_inference_graph.pb
 framework: tf
-quantizable: true
 license: https://raw.githubusercontent.com/tensorflow/models/master/LICENSE
+model_info:
+  model_type: SSD
+  confidence_threshold: 0.5
+  iou_threshold: 0.5
+  resize_type: fit_to_window_letterbox
+  labels:
+    - person
+    - bicycle
+    - car
+    - motorcycle
+    - airplane
+    - bus
+    - train
+    - truck
+    - boat
+    - trafficlight
+    - firehydrant
+    - stopsign
+    - parkingmeter
+    - bench
+    - bird
+    - cat
+    - dog
+    - horse
+    - sheep
+    - cow
+    - elephant
+    - bear
+    - zebra
+    - giraffe
+    - backpack
+    - umbrella
+    - handbag
+    - tie
+    - suitcase
+    - frisbee
+    - skis
+    - snowboard
+    - sportsball
+    - kite
+    - baseballbat
+    - baseballglove
+    - skateboard
+    - surfboard
+    - tennisracket
+    - bottle
+    - wineglass
+    - cup
+    - fork
+    - knife
+    - spoon
+    - bowl
+    - banana
+    - apple
+    - sandwich
+    - orange
+    - broccoli
+    - carrot
+    - hotdog
+    - pizza
+    - donut
+    - cake
+    - chair
+    - couch
+    - pottedplant
+    - bed
+    - diningtable
+    - toilet
+    - tv
+    - laptop
+    - mouse
+    - remote
+    - keyboard
+    - cellphone
+    - microwave
+    - oven
+    - toaster
+    - sink
+    - refrigerator
+    - book
+    - clock
+    - vase
+    - scissors
+    - teddybear
+    - hairdrier
+    - toothbrush

@@ -1,5 +1,5 @@
 """
-Copyright (c) 2018-2022 Intel Corporation
+Copyright (c) 2018-2024 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import re
 import sys
 import warnings
 import platform
-import subprocess # nosec - disable B404:import-subprocess check
-from distutils.version import LooseVersion
+import subprocess  # nosec B404  # disable import-subprocess check
+from packaging.version import Version
 from pathlib import Path
 from setuptools import find_packages, setup # pylint:disable=W9902
 from setuptools.command.test import test as test_command # pylint:disable=W9902
@@ -55,7 +55,7 @@ def read(*path):
 def check_and_update_numpy(min_acceptable='1.15'):
     try:
         import numpy as np # pylint:disable=C0415
-        update_required = LooseVersion(np.__version__) < LooseVersion(min_acceptable)
+        update_required = Version(np.__version__) < Version(min_acceptable)
     except ImportError:
         update_required = True
     if update_required:
@@ -75,7 +75,7 @@ def find_version(*path):
     raise RuntimeError("Unable to find version string.")
 
 long_description = read("README.md")
-version = find_version("openvino/tools/accuracy_checker", "__init__.py")
+version = find_version("accuracy_checker", "__init__.py")
 
 
 def prepare_requirements():
@@ -84,7 +84,7 @@ def prepare_requirements():
         warnings.warn(
             '"install_core" command is deprecated and will be removed in 2023.1 release, please use "install" instead',
             DeprecationWarning
-            )
+        )
     requirements = read("requirements-extra.in").split('\n')
     return requirements_core, requirements
 
@@ -98,13 +98,20 @@ except ImportError as opencv_import_error:
         warnings.warn(
             "Problem with cv2 import: \n{}\n opencv-python will be added to requirements".format(opencv_import_error)
         )
-        _requirements.append('opencv-python')
+        # 4.6.0.66 is incompatible with numpy>=2.0 (core requirements allow numpy<2.1.0)
+        _requirements.append('opencv-python==4.10.0.84')
     else:
         warnings.warn(
             "Problem with cv2 import: \n{}".format(opencv_import_error)
             + "\n Probably due to unsuitable numpy version, will be updated")
         check_and_update_numpy()
 
+
+
+_extras = _extras + ['pycocotools>=2.0.2', 'torch>=0.4.0', 'torchvision>=0.2.1', 'lpips', 'soundfile', "torchmetrics", "diffusers"]
+if sys.version_info.major == 3 and sys.version_info.minor < 12:
+    _extras.append('crf_beam;platform_system=="Linux"')
+    _extras.append('kenlm @ git+https://github.com/kpu/kenlm.git@4cb443e60b7bf2c0ddf3c745378f76cb59e254e5#egg=kenlm')
 
 setup(
     name="accuracy_checker",
@@ -114,13 +121,12 @@ setup(
     packages=find_packages(),
     entry_points={
         "console_scripts": [
-            "accuracy_check=openvino.tools.accuracy_checker.main:main",
-            "convert_annotation=openvino.tools.accuracy_checker.annotation_converters.convert:main"]},
+            "accuracy_check=accuracy_checker.main:main",
+            "convert_annotation=accuracy_checker.annotation_converters.convert:main"]},
     zip_safe=False,
-    python_requires='>=3.5',
+    python_requires='>=3.9',
     install_requires=_requirements,
     tests_require=[read("requirements-test.in")],
     cmdclass={'test': PyTest, 'install_core': CoreInstall},
-    extras_require={'extra': _extras + ['pycocotools>=2.0.2', 'crf_beam;platform_system=="Linux"', 'torch>=0.4.0', 'torchvision>=0.2.1', 'lpips', 'soundfile',
-                              'kenlm @ git+https://github.com/kpu/kenlm.git@f01e12d83c7fd03ebe6656e0ad6d73a3e022bd50#egg=kenlm']}
+    extras_require={'extra': _extras}
 )

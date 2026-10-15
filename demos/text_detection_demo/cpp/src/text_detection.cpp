@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2022 Intel Corporation
+// Copyright (C) 2019-2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 //
 
@@ -171,7 +171,7 @@ cv::Mat get_all(const std::vector<cv::Point>& points, int w, int h, std::unorder
 } // namespace
 
 
-std::map<std::string, ov::runtime::Tensor> TextDetector::Infer(const cv::Mat& frame) {
+std::map<std::string, ov::Tensor> TextDetector::Infer(const cv::Mat& frame) {
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     cv::Mat resizedImg = frame;
@@ -184,7 +184,7 @@ std::map<std::string, ov::runtime::Tensor> TextDetector::Infer(const cv::Mat& fr
     m_infer_request.infer();
 
     // Processing output
-    std::map<std::string, ov::runtime::Tensor> output_tensors;
+    std::map<std::string, ov::Tensor> output_tensors;
     for (const auto& output_name : m_output_names) {
         output_tensors[output_name] = m_infer_request.get_tensor(output_name);
     }
@@ -197,7 +197,7 @@ std::map<std::string, ov::runtime::Tensor> TextDetector::Infer(const cv::Mat& fr
 }
 
 std::vector<cv::RotatedRect> TextDetector::postProcess(
-    const std::map<std::string, ov::runtime::Tensor>& output_tensors,
+    const std::map<std::string, ov::Tensor>& output_tensors,
     const cv::Size& image_size, const cv::Size& input_shape,
     float cls_conf_threshold, float link_conf_threshold) {
     const int kMinArea = 300;
@@ -223,7 +223,7 @@ std::vector<cv::RotatedRect> TextDetector::postProcess(
         ov::Shape link_shape = output_tensors.at(kLocOutputName).get_shape();
         size_t link_data_size = link_shape[0] * link_shape[1] * link_shape[2] * link_shape[3];
 
-        float* link_data_pointer = output_tensors.at(kLocOutputName).data<float>();
+        auto link_data_pointer = output_tensors.at(kLocOutputName).data<float>();
 
         std::vector<float> link_data(link_data_pointer, link_data_pointer + link_data_size);;
         if (m_modelLayout == ov::Layout("NCHW")) {
@@ -243,7 +243,7 @@ std::vector<cv::RotatedRect> TextDetector::postProcess(
         ov::Shape cls_shape = output_tensors.at(kClsOutputName).get_shape();
         size_t cls_data_size = cls_shape[0] * cls_shape[1] * cls_shape[2] * cls_shape[3];
 
-        float* cls_data_pointer = output_tensors.at(kClsOutputName).data<float>();
+        auto cls_data_pointer = output_tensors.at(kClsOutputName).data<float>();
 
         std::vector<float> cls_data(cls_data_pointer, cls_data_pointer + cls_data_size);
         if (m_modelLayout == ov::Layout("NCHW")) {

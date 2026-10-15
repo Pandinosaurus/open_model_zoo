@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
- Copyright (C) 2018-2022 Intel Corporation
+ Copyright (C) 2018-2024 Intel Corporation
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import numpy as np
 import scipy
 import wave
 
-from openvino.runtime import Core, get_version, PartialShape
+from openvino import Core, get_version, PartialShape
 
 log.basicConfig(format='[ %(levelname)s ] %(message)s', level=log.DEBUG, stream=sys.stdout)
 
@@ -48,16 +48,16 @@ class QuartzNet:
         if len(model.inputs) != 1:
             raise RuntimeError('QuartzNet must have one input')
         self.input_tensor_name = model.inputs[0].get_any_name()
-        model_input_shape = model.inputs[0].shape
+        model_input_shape = model.inputs[0].get_partial_shape()
         if len(model_input_shape) != 3:
             raise RuntimeError('QuartzNet input must be 3-dimensional')
         if model_input_shape[1] != input_shape[1]:
             raise RuntimeError("QuartzNet input second dimension can't be reshaped")
-        if model_input_shape[2] % self.pad_to:
+        if model_input_shape[2].is_static and model_input_shape[2].get_length() % self.pad_to:
             raise RuntimeError(f'{self.pad_to} must be a divisor of QuartzNet input third dimension')
         if len(model.outputs) != 1:
             raise RuntimeError('QuartzNet must have one output')
-        model_output_shape = model.outputs[0].shape
+        model_output_shape = model.outputs[0].get_partial_shape()
         if len(model_output_shape) != 3:
             raise RuntimeError('QuartzNet output must be 3-dimensional')
         if model_output_shape[2] != len(self.alphabet) + 1:  # +1 for blank char
@@ -79,9 +79,9 @@ class QuartzNet:
         preemphased = np.concatenate([audio[:1], audio[1:] - preemph * audio[:-1].astype(np.float32)])
 
         win_length = round(sampling_rate * 0.02)
-        spec = np.abs(librosa.core.spectrum.stft(preemphased, n_fft=512, hop_length=round(sampling_rate * 0.01),
+        spec = np.abs(librosa.stft(preemphased, n_fft=512, hop_length=round(sampling_rate * 0.01),
             win_length=win_length, center=True, window=scipy.signal.windows.hann(win_length), pad_mode='reflect'))
-        mel_basis = librosa.filters.mel(sampling_rate, 512, n_mels=64, fmin=0.0, fmax=8000.0, norm='slaney', htk=False)
+        mel_basis = librosa.filters.mel(sr=sampling_rate, n_fft=512, n_mels=64, fmin=0.0, fmax=8000.0, norm='slaney', htk=False)
         log_melspectrum = np.log(np.dot(mel_basis, np.power(spec, 2)) + 2 ** -24)
 
         normalized = (log_melspectrum - log_melspectrum.mean(1)[:, None]) / (log_melspectrum.std(1)[:, None] + 1e-5)
@@ -108,7 +108,7 @@ def build_argparser():
     parser.add_argument('-i', '--input', help="Required. Path to an audio file in WAV PCM 16 kHz mono format", required=True)
     parser.add_argument('-d', '--device', default='CPU',
                         help="Optional. Specify the target device to infer on, for example: "
-                             "CPU, GPU, HDDL, MYRIAD or HETERO. "
+                             "CPU, GPU or HETERO. "
                              "The demo will look for a suitable OpenVINO Runtime plugin for this device. Default value is CPU.")
     return parser
 

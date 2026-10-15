@@ -1,5 +1,5 @@
 /*
-// Copyright (C) 2021-2022 Intel Corporation
+// Copyright (C) 2021-2024 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,7 +45,9 @@ std::shared_ptr<InternalModelData> ImageModel::preprocess(const InputData& input
         const size_t height = tensorShape[ov::layout::height_idx(layout)];
         const size_t channels = tensorShape[ov::layout::channels_idx(layout)];
         if (static_cast<size_t>(img.channels()) != channels) {
-            throw std::runtime_error("The number of channels for model input and image must match");
+            throw std::runtime_error(std::string("The number of channels for model input: ") +
+                                     std::to_string(channels) + " and image: " +
+                                     std::to_string(img.channels()) + " - must match");
         }
         if (channels != 1 && channels != 3) {
             throw std::runtime_error("Unsupported number of channels");

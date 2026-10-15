@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Intel Corporation
+// Copyright (C) 2020-2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 //
 
@@ -32,12 +32,11 @@
 #include <pipelines/async_pipeline.h>
 #include <pipelines/metadata.h>
 #include <utils/args_helper.hpp>
+#include <utils/classification_grid_mat.hpp>
 #include <utils/common.hpp>
 #include <utils/config_factory.h>
 #include <utils/performance_metrics.hpp>
 #include <utils/slog.hpp>
-
-#include "grid_mat.hpp"
 
 static const char help_message[] = "Print a usage message.";
 static const char image_message[] = "Required. Path to a folder with images or path to an image file.";
@@ -60,6 +59,11 @@ static const char no_show_message[] = "Optional. Disable showing of processed im
 static const char execution_time_message[] = "Optional. Time in seconds to execute program. "
                                              "Default is -1 (infinite time).";
 static const char utilization_monitors_message[] = "Optional. List of monitors to show initially.";
+static const char reverse_input_channels_message[] = "Optional. Switch the input channels order from BGR to RGB.";
+static const char mean_values_message[] =
+    "Optional. Normalize input by subtracting the mean values per channel. Example: \"255.0 255.0 255.0\"";
+static const char scale_values_message[] = "Optional. Divide input by scale values per channel. Division is applied "
+                                           "after mean values subtraction. Example: \"255.0 255.0 255.0\"";
 
 DEFINE_bool(h, false, help_message);
 DEFINE_string(i, "", image_message);
@@ -77,6 +81,9 @@ DEFINE_bool(auto_resize, false, input_resizable_message);
 DEFINE_bool(no_show, false, no_show_message);
 DEFINE_uint32(time, std::numeric_limits<gflags::uint32>::max(), execution_time_message);
 DEFINE_string(u, "", utilization_monitors_message);
+DEFINE_bool(reverse_input_channels, false, reverse_input_channels_message);
+DEFINE_string(mean_values, "", mean_values_message);
+DEFINE_string(scale_values, "", scale_values_message);
 
 static void showUsage() {
     std::cout << std::endl;
@@ -99,6 +106,9 @@ static void showUsage() {
     std::cout << "    -no_show                  " << no_show_message << std::endl;
     std::cout << "    -time \"<integer>\"         " << execution_time_message << std::endl;
     std::cout << "    -u                        " << utilization_monitors_message << std::endl;
+    std::cout << "    -reverse_input_channels   " << reverse_input_channels_message << std::endl;
+    std::cout << "    -mean_values              " << mean_values_message << std::endl;
+    std::cout << "    -scale_values             " << scale_values_message << std::endl;
 }
 
 bool ParseAndCheckCommandLine(int argc, char* argv[]) {
@@ -190,6 +200,12 @@ int main(int argc, char* argv[]) {
                 if ((imagePathEndIdx != 1 || imagePath[0] != '.') && imagePathEndIdx != std::string::npos) {
                     throw std::runtime_error("The ground truth file has incorrect format.");
                 }
+                // std::map type for classIndicesMap guarantees to sort out images by name.
+                // The same logic is applied in openImagesCapture() for DirReader source type,
+                // which produces data for sorted pictures.
+                // To be coherent in detection of ground truth for pictures we have to
+                // use the same sorting approach for a source and ground truth data
+                // If you're going to copy paste this code, remember that pictures need to be sorted
                 classIndicesMap.insert({imagePath.substr(imagePathEndIdx + 1), classIndex});
             }
 
@@ -218,8 +234,10 @@ int main(int argc, char* argv[]) {
         slog::info << ov::get_openvino_version() << slog::endl;
         ov::Core core;
 
-        AsyncPipeline pipeline(std::unique_ptr<ModelBase>(
-                                   new ClassificationModel(FLAGS_m, FLAGS_nt, FLAGS_auto_resize, labels, FLAGS_layout)),
+        std::unique_ptr<ClassificationModel> model(new ClassificationModel(FLAGS_m, FLAGS_nt, FLAGS_auto_resize, labels, FLAGS_layout));
+        model->setInputsPreprocessing(FLAGS_reverse_input_channels, FLAGS_mean_values, FLAGS_scale_values);
+
+        AsyncPipeline pipeline(std::move(model),
                                ConfigFactory::getUserConfig(FLAGS_d, FLAGS_nireq, FLAGS_nstreams, FLAGS_nthreads),
                                core);
 
@@ -228,12 +246,12 @@ int main(int argc, char* argv[]) {
         int height;
         std::vector<std::string> gridMatRowsCols = split(FLAGS_res, 'x');
         if (gridMatRowsCols.size() != 2) {
-            throw std::runtime_error("The value of GridMat resolution flag is not valid.");
+            throw std::runtime_error("The value of ClassificationGridMat resolution flag is not valid.");
         } else {
             width = std::stoi(gridMatRowsCols[0]);
             height = std::stoi(gridMatRowsCols[1]);
         }
-        GridMat gridMat(presenter, cv::Size(width, height));
+        ClassificationGridMat gridMat(presenter, cv::Size(width, height));
         bool keepRunning = true;
         std::unique_ptr<ResultBase> result;
         double accuracy = 0;
@@ -254,7 +272,7 @@ int main(int argc, char* argv[]) {
             if (isTestMode && elapsedSeconds >= testDuration) {
                 isTestMode = false;
                 typedef std::chrono::duration<double, std::chrono::seconds::period> Sec;
-                gridMat = GridMat(presenter,
+                gridMat = ClassificationGridMat(presenter,
                                   cv::Size(width, height),
                                   cv::Size(16, 9),
                                   (framesNum - framesNumOnCalculationStart) /
@@ -299,7 +317,7 @@ int main(int argc, char* argv[]) {
                     throw std::invalid_argument("Renderer: image provided in metadata is empty");
                 }
                 PredictionResult predictionResult = PredictionResult::Incorrect;
-                std::string label = classificationResult.topLabels.front().label;
+                std::string label = (classificationResult.topLabels.size() != 0) ? classificationResult.topLabels.front().label : "N/A";
                 if (!FLAGS_gt.empty()) {
                     for (size_t i = 0; i < FLAGS_nt; i++) {
                         unsigned predictedClass = classificationResult.topLabels[i].id;

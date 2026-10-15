@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
- Copyright (c) 2019-2022 Intel Corporation
+ Copyright (c) 2019-2024 Intel Corporation
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ import nibabel as nib
 from PIL import Image, ImageSequence
 from argparse import ArgumentParser, SUPPRESS
 from fnmatch import fnmatch
-from scipy.ndimage import interpolation
+from scipy.ndimage import zoom
 
-from openvino.runtime import Core, get_version, PartialShape
+from openvino import Core, get_version, PartialShape
 
 
 log.basicConfig(format='[ %(levelname)s ] %(message)s', level=log.DEBUG, stream=sys.stdout)
@@ -173,9 +173,9 @@ def normalize(image, mask, full_intensities_range):
 
 
 def resample_np(data, output_shape, order):
-    assert(len(data.shape) == len(output_shape))
+    assert len(data.shape) == len(output_shape)
     factor = [float(o) / i for i, o in zip(data.shape, output_shape)]
-    return interpolation.zoom(data, zoom=factor, order=order)
+    return zoom(data, zoom=factor, order=order)
 
 
 def read_image(test_data_path, data_name, sizes=(128, 128, 128), is_series=True,
@@ -189,7 +189,7 @@ def read_image(test_data_path, data_name, sizes=(128, 128, 128), is_series=True,
         for j, s in enumerate(data_seq):
             image_handle = read_nii_header(test_data_path, data_name + s)
             affine = image_handle.affine
-            image = image_handle.get_data().astype(np.float32)
+            image = image_handle.get_fdata(dtype=np.float32)
 
             mask = image > 0.
             bboxes[j] = bbox3(mask)
@@ -200,7 +200,7 @@ def read_image(test_data_path, data_name, sizes=(128, 128, 128), is_series=True,
     else:
         data_handle = read_nii_header(test_data_path, data_name)
         affine = data_handle.affine
-        data = data_handle.get_data().astype(np.float32)
+        data = data_handle.get_fdata(dtype=np.float32)
         assert len(data.shape) == 4, 'Wrong data dimensions - {}, must be 4'.format(len(data.shape))
         assert data.shape[3] == 4, 'Wrong data shape - {}, must be (:,:,:,4)'.format(data.shape)
         # Reading order is specified for data from http://medicaldecathlon.com/

@@ -1,5 +1,5 @@
 /*
-// Copyright (C) 2020-2022 Intel Corporation
+// Copyright (C) 2020-2024 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ ModelSSD::ModelSSD(const std::string& modelFileName,
 
 std::shared_ptr<InternalModelData> ModelSSD::preprocess(const InputData& inputData, ov::InferRequest& request) {
     if (inputsNames.size() > 1) {
-        const auto& imageInfoTensor = request.get_tensor(inputsNames[1]);
+        auto imageInfoTensor = request.get_tensor(inputsNames[1]);
         const auto info = imageInfoTensor.data<float>();
         info[0] = static_cast<float>(netInputHeight);
         info[1] = static_cast<float>(netInputWidth);

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
- Copyright (c) 2020 Intel Corporation
+ Copyright (c) 2020-2024 Intel Corporation
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import logging as log
 from argparse import ArgumentParser, SUPPRESS
 from os import path
 
-from openvino.runtime import Core, get_version
+from openvino import Core, get_version
 
 from action_recognition_demo.models import IEModel, DummyDecoder
 from action_recognition_demo.result_renderer import ResultRenderer
@@ -43,7 +43,7 @@ def build_argparser():
     args.add_argument('--loop', default=False, action='store_true',
                       help='Optional. Enable reading the input in a loop.')
     args.add_argument('-o', '--output', required=False,
-                      help='Optional. Name of the output file(s) to save.')
+                      help='Optional. Name of the output file(s) to save. Frames of odd width or height can be truncated. See https://github.com/opencv/opencv/pull/24086')
     args.add_argument('-limit', '--output_limit', required=False, default=1000, type=int,
                       help='Optional. Number of frames to store in output. '
                            'If 0 is set, all frames are stored.')
@@ -58,9 +58,9 @@ def build_argparser():
                               help='Optional. Length of sequence that decoder takes as input.',
                               default=16, type=int)
     args.add_argument('-d', '--device',
-                      help='Optional. Specify a target device to infer on. CPU, GPU, HDDL or MYRIAD is '
-                           'acceptable. The demo will look for a suitable plugin for the device specified. '
-                           'Default value is CPU.',
+                      help="Optional. Specify a device to infer on (the list of available devices is shown below). Use "
+                           "'-d HETERO:<comma-separated_devices_list>' format to specify HETERO plugin. Use "
+                           "'-d MULTI:<comma-separated_devices_list>' format to specify MULTI plugin. Default is CPU",
                       default='CPU', type=str)
     args.add_argument('-lb', '--labels', help='Optional. Path to file with label names.', type=str)
     args.add_argument('--no_show', action='store_true', help="Optional. Don't show output.")
@@ -87,18 +87,15 @@ def main():
     log.info('\tbuild: {}'.format(get_version()))
     core = Core()
 
-    if 'MYRIAD' in args.device:
-        myriad_config = {'MYRIAD_ENABLE_HW_ACCELERATION': 'YES'}
-        core.set_property('MYRIAD', myriad_config)
-
     decoder_target_device = 'CPU'
     if args.device != 'CPU':
         encoder_target_device = args.device
+        decoder_target_device = args.device
     else:
         encoder_target_device = decoder_target_device
 
     models = [IEModel(args.m_encoder, core, encoder_target_device, model_type='Action Recognition Encoder',
-                      num_requests=(3 if args.device == 'MYRIAD' else 1))]
+                      num_requests=1)]
 
     if args.architecture_type == 'en-de':
         if args.m_decoder is None:

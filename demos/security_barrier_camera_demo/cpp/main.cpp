@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2022 Intel Corporation
+// Copyright (C) 2018-2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 //
 
@@ -16,7 +16,6 @@
 
 #include "openvino/openvino.hpp"
 #include "openvino/runtime/intel_gpu/properties.hpp"
-#include "openvino/runtime/intel_myriad/hddl_properties.hpp"
 
 #include "monitors/presenter.h"
 #include "utils/args_helper.hpp"
@@ -719,7 +718,7 @@ int main(int argc, char* argv[]) {
                 if (FLAGS_nthreads != 0) {
                     core.set_property("CPU", ov::inference_num_threads(FLAGS_nthreads));
                 }
-                core.set_property("CPU", ov::affinity(ov::Affinity::NONE));
+                core.set_property("CPU", ov::hint::enable_cpu_pinning(false));
                 core.set_property("CPU", ov::streams::num((device_nstreams.count("CPU") > 0 ? ov::streams::Num(device_nstreams["CPU"]) : ov::streams::AUTO)));
 
                 device_nstreams["CPU"] = core.get_property("CPU", ov::streams::num);
@@ -737,19 +736,10 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        // Graph tagging via config options
-        auto makeTagConfig = [&](const std::string& deviceName, const std::string& suffix) {
-            ov::AnyMap config;
-            if (FLAGS_tag && deviceName == "HDDL") {
-                config["HDDL"] = ov::intel_myriad::hddl::graph_tag("tag" + suffix);
-            }
-            return config;
-        };
-
         unsigned nireq = FLAGS_nireq == 0 ? inputChannels.size() : FLAGS_nireq;
 
         Detector detector(core, FLAGS_d, FLAGS_m,
-            {static_cast<float>(FLAGS_t), static_cast<float>(FLAGS_t)}, FLAGS_auto_resize, makeTagConfig(FLAGS_d, "Detect"));
+            {static_cast<float>(FLAGS_t), static_cast<float>(FLAGS_t)}, FLAGS_auto_resize);
         slog::info << "\tNumber of network inference requests: " << nireq << slog::endl;
 
         VehicleAttributesClassifier vehicleAttributesClassifier;
@@ -759,7 +749,7 @@ int main(int argc, char* argv[]) {
         std::size_t nrecognizersireq{0};
 
         if (!FLAGS_m_va.empty()) {
-            vehicleAttributesClassifier = VehicleAttributesClassifier(core, FLAGS_d_va, FLAGS_m_va, FLAGS_auto_resize, makeTagConfig(FLAGS_d_va, "Attr"));
+            vehicleAttributesClassifier = VehicleAttributesClassifier(core, FLAGS_d_va, FLAGS_m_va, FLAGS_auto_resize);
             nclassifiersireq = nireq * 3;
             slog::info << "\tNumber of network inference requests: " << nclassifiersireq << slog::endl;
         } else {
@@ -767,7 +757,7 @@ int main(int argc, char* argv[]) {
         }
 
         if (!FLAGS_m_lpr.empty()) {
-            lpr = Lpr(core, FLAGS_d_lpr, FLAGS_m_lpr, FLAGS_auto_resize, makeTagConfig(FLAGS_d_lpr, "LPR"));
+            lpr = Lpr(core, FLAGS_d_lpr, FLAGS_m_lpr, FLAGS_auto_resize);
             nrecognizersireq = nireq * 3;
             slog::info << "\tNumber of network inference requests: " << nrecognizersireq << slog::endl;
         } else {

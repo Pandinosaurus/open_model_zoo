@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
- Copyright (c) 2020-2022 Intel Corporation
+ Copyright (c) 2020-2024 Intel Corporation
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -22,7 +22,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from openvino.runtime import Core, get_version
+from openvino import Core, get_version
 from utils.codec import CTCCodec
 
 log.basicConfig(format='[ %(levelname)s ] %(message)s', level=log.DEBUG, stream=sys.stdout)
@@ -38,7 +38,7 @@ def build_argparser():
     args.add_argument("-i", "--input", type=str, required=True,
                       help="Required. Path to an image to infer")
     args.add_argument("-d", "--device", type=str, default="CPU",
-                      help="Optional. Specify the target device to infer on; CPU, GPU, HDDL, MYRIAD or HETERO is "
+                      help="Optional. Specify the target device to infer on; CPU, GPU or HETERO is "
                            "acceptable. The demo will look for a suitable plugin for device specified. Default "
                            "value is CPU")
     args.add_argument("-ni", "--number_iter", type=int, default=1,
@@ -59,6 +59,8 @@ def get_characters(args):
 
 def preprocess_input(image_name, height, width):
     src = cv2.imread(image_name, cv2.IMREAD_GRAYSCALE)
+    if src is None:
+        raise RuntimeError(f"Failed to imread {image_name}")
     ratio = float(src.shape[1]) / float(src.shape[0])
     tw = int(height * ratio)
     rsz = cv2.resize(src, (tw, height), interpolation=cv2.INTER_AREA).astype(np.float32)

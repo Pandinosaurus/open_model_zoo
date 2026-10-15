@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (C) 2019-2022 Intel Corporation
+# Copyright (C) 2019-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 #
 # This file is based in part on deepspeech_openvino_0.5.py by Feng Yen-Chang at
@@ -16,7 +16,7 @@ import argparse
 import yaml
 import numpy as np
 from tqdm import tqdm
-from openvino.runtime import Core, get_version
+from openvino import Core, get_version
 
 from asr_utils.profiles import PROFILES
 from asr_utils.deep_speech_seq_pipeline import DeepSpeechSeqPipeline
@@ -29,7 +29,7 @@ def build_argparser():
     parser.add_argument('-i', '--input', type=str, metavar="FILENAME", required=True,
                         help="Required. Path to an audio file in WAV PCM 16 kHz mono format")
     parser.add_argument('-d', '--device', default='CPU', type=str,
-                        help="Optional. Specify the target device to infer on, for example: CPU, GPU, HDDL, MYRIAD or HETERO. "
+                        help="Optional. Specify the target device to infer on, for example: CPU or GPU or HETERO. "
                              "The demo will look for a suitable OpenVINO Runtime plugin for this device. (default is CPU)")
     parser.add_argument('-m', '--model', type=str, metavar="FILENAME", required=True,
                         help="Required. Path to an .xml file with a trained model")

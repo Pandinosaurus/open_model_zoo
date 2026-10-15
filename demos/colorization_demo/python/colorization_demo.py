@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
- Copyright (c) 2018-2021 Intel Corporation
+ Copyright (c) 2018-2024 Intel Corporation
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  limitations under the License.
 """
 
-from openvino.runtime import Core, get_version
+from openvino import Core, get_version
 import cv2 as cv
 import numpy as np
 import logging as log
@@ -25,7 +25,7 @@ from argparse import ArgumentParser, SUPPRESS
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[2] / 'common/python'))
-sys.path.append(str(Path(__file__).resolve().parents[2] / 'common/python/openvino/model_zoo'))
+sys.path.append(str(Path(__file__).resolve().parents[2] / 'common/python/model_zoo'))
 
 import monitors
 from images_capture import open_images_capture
@@ -41,8 +41,9 @@ def build_arg():
     in_args.add_argument("-m", "--model", help="Required. Path to .xml file with pre-trained model.",
                          required=True, type=Path)
     in_args.add_argument("-d", "--device",
-                         help="Optional. Specify target device for infer: CPU, GPU, HDDL or MYRIAD. "
-                              "Default: CPU",
+                         help="Optional. Specify a device to infer on (the list of available devices is shown below). Use "
+                              "'-d HETERO:<comma-separated_devices_list>' format to specify HETERO plugin. Use "
+                              "'-d MULTI:<comma-separated_devices_list>' format to specify MULTI plugin. Default is CPU",
                          default="CPU", type=str)
     in_args.add_argument('-i', "--input", required=True,
                          help='Required. An input to process. The input must be a single image, '
@@ -50,7 +51,7 @@ def build_arg():
     in_args.add_argument('--loop', default=False, action='store_true',
                          help='Optional. Enable reading the input in a loop.')
     in_args.add_argument('-o', '--output', required=False,
-                         help='Optional. Name of the output file(s) to save.')
+                         help='Optional. Name of the output file(s) to save. Frames of odd width or height can be truncated. See https://github.com/opencv/opencv/pull/24086')
     in_args.add_argument('-limit', '--output_limit', required=False, default=1000, type=int,
                          help='Optional. Number of frames to store in output. '
                               'If 0 is set, all frames are stored.')

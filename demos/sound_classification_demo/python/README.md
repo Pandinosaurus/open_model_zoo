@@ -47,8 +47,8 @@ Options:
   -m MODEL, --model MODEL
                         Required. Path to an .xml file with a trained model.
   -d DEVICE, --device DEVICE
-                        Optional. Specify the target device to infer on; CPU,
-                        GPU, HDDL or MYRIAD is acceptable. The demo
+                        Optional. Specify the target device to infer on; CPU or
+                        GPU is acceptable. The demo
                         will look for a suitable plugin for device specified.
                         Default value is CPU
   --labels LABELS       Optional. Labels mapping file
@@ -67,6 +67,8 @@ You can use the following command to do inference on GPU with a pre-trained soun
 python3 sound_classification_demo.py -i <path_to_wav>/input_audio.wav -m <path_to_model>/aclnet.xml -d GPU --sample_rate 16000
 ```
 
+An example audio file can be taken from https://storage.openvinotoolkit.org/models_contrib/speech/2021.2/librispeech_s5/how_are_you_doing_today.wav.
+
 ## Demo Output
 
 The demo uses console to display the predictions. It shows classification of each clip and total prediction of whole audio.
@@ -77,5 +79,5 @@ The demo reports
 ## See Also
 
 * [Open Model Zoo Demos](../../README.md)
-* [Model Optimizer](https://docs.openvino.ai/latest/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
+* [Model Optimizer](https://docs.openvino.ai/2023.0/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
 * [Model Downloader](../../../tools/model_tools/README.md)

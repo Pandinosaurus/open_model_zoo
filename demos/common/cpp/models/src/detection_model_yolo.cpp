@@ -1,5 +1,5 @@
 /*
-// Copyright (C) 2020-2022 Intel Corporation
+// Copyright (C) 2020-2024 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -130,7 +130,8 @@ void ModelYolo::prepareInputsOutputs(std::shared_ptr<ov::Model>& model) {
     }
 
     ov::preprocess::PrePostProcessor ppp(model);
-    ppp.input().tensor().set_element_type(ov::element::u8).set_layout({"NHWC"});
+    inputTransform.setPrecision(ppp, input.get_any_name());
+    ppp.input().tensor().set_layout({"NHWC"});
 
     if (useAutoResize) {
         ppp.input().tensor().set_spatial_dynamic_shape();

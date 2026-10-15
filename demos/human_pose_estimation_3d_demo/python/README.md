@@ -76,13 +76,13 @@ Options:
                         a folder of images, video file or camera id.
   --loop                Optional. Enable reading the input in a loop.
   -o OUTPUT, --output OUTPUT
-                        Optional. Name of the output file(s) to save.
+                        Optional. Name of the output file(s) to save. Frames of odd width or height can be truncated. See https://github.com/opencv/opencv/pull/24086
   -limit OUTPUT_LIMIT, --output_limit OUTPUT_LIMIT
                         Optional. Number of frames to store in output.
                         If 0 is set, all frames are stored.
   -d DEVICE, --device DEVICE
-                        Optional. Specify the target device to infer on: CPU,
-                        GPU, HDDL or MYRIAD. The demo will look for a
+                        Optional. Specify the target device to infer on: CPU or
+                        GPU. The demo will look for a
                         suitable plugin for device specified (by default, it
                         is CPU).
   --height_size HEIGHT_SIZE
@@ -127,5 +127,5 @@ You can use both of these metrics to measure application-level performance.
 ## See Also
 
 * [Open Model Zoo Demos](../../README.md)
-* [Model Optimizer](https://docs.openvino.ai/latest/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
+* [Model Optimizer](https://docs.openvino.ai/2023.0/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
 * [Model Downloader](../../../tools/model_tools/README.md)

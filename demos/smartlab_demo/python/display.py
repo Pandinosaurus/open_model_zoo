@@ -1,5 +1,5 @@
 """
- Copyright (c) 2021-2022 Intel Corporation
+ Copyright (c) 2021-2024 Intel Corporation
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -20,8 +20,9 @@ from pathlib import Path
 
 
 class Display:
-    def __init__(self):
+    def __init__(self, show):
         '''Score Evaluation Variables'''
+        self.show = show
         self.wait_icon = cv2.imread(str(Path(__file__).resolve().parents[0] / 'icon/wait.png'), cv2.IMREAD_UNCHANGED)
         self.no_icon = cv2.imread(str(Path(__file__).resolve().parents[0] / 'icon/no.png'), cv2.IMREAD_UNCHANGED)
         self.done_icon = cv2.imread(str(Path(__file__).resolve().parents[0] / 'icon/done.png'), cv2.IMREAD_UNCHANGED)
@@ -90,7 +91,7 @@ class Display:
         cv2.putText(img, text, (x, y + text_h + font_scale - 1), font, font_scale, text_color, font_thickness)
         return text_size
 
-    def display_result(self, frame_top, frame_side, side_seg_results, top_seg_results, \
+    def display_result(self, frame_top, frame_side, side_seg_results, top_seg_results,
                        top_det_results, side_det_results, scoring, state, keyframe, frame_counter, fps):
 
         if state == 'Initial':
@@ -167,16 +168,6 @@ class Display:
         m_weights_tweezers = scoring['measuring_score_weights_tweezers']
         e_tidy = scoring['end_score_tidy']
 
-        # display keyframe
-        i_rider_k = keyframe['initial_score_rider']
-        i_balance_k = keyframe['initial_score_balance']
-        m_rider_tweezers_k = keyframe['measuring_score_rider_tweezers']
-        m_balance_k = keyframe['measuring_score_balance']
-        m_object_left_k = keyframe['measuring_score_object_left']
-        m_weights_right_k = keyframe['measuring_score_weights_right']
-        m_weights_tweezers_k = keyframe['measuring_score_weights_tweezers']
-        e_tidy_k = keyframe['end_score_tidy']
-
         w, h = self.draw_text_without_background(self.score_board, f"SCORE - {display_status}",
                                                  pos=(self.w1, 60), text_color_bg=initial_text_color_bg)
         w, h = self.draw_text(self.score_board, f"INITIALISE RIDER[{i_rider}]",
@@ -212,4 +203,5 @@ class Display:
         result_image = np.concatenate((frame_top, frame_side), axis=1)
         result_image = np.concatenate((result_image, self.score_board), axis=0)
 
-        cv2.imshow("Smart Science Lab", result_image)
+        if self.show:
+            cv2.imshow("Smart Science Lab", result_image)

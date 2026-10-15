@@ -1,5 +1,5 @@
 /*
-// Copyright (C) 2020-2022 Intel Corporation
+// Copyright (C) 2020-2024 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -185,7 +185,8 @@ std::vector<std::pair<size_t, float>> nms(float* scoresPtr, const ov::Shape& sha
     return scores;
 }
 
-static std::vector<std::pair<size_t, float>> filterScores(const ov::Tensor& scoresTensor, float threshold) {
+static std::vector<std::pair<size_t, float>>
+filterScores(ov::Tensor &scoresTensor, float threshold) {
     auto shape = scoresTensor.get_shape();
     float* scoresPtr = scoresTensor.data<float>();
 
@@ -259,7 +260,7 @@ void transform(std::vector<ModelCenterNet::BBox>& boxes,
 
 std::unique_ptr<ResultBase> ModelCenterNet::postprocess(InferenceResult& infResult) {
     // --------------------------- Filter data and get valid indices ---------------------------------
-    const auto& heatmapTensor = infResult.outputsData[outputsNames[0]];
+    auto &heatmapTensor = infResult.outputsData[outputsNames[0]];
     const auto& heatmapTensorShape = heatmapTensor.get_shape();
     const auto chSize = heatmapTensorShape[2] * heatmapTensorShape[3];
     const auto scores = filterScores(heatmapTensor, confidenceThreshold);

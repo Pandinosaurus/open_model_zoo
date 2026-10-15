@@ -1,5 +1,5 @@
 /*
-// Copyright (C) 2021-2022 Intel Corporation
+// Copyright (C) 2021-2024 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ HpeAssociativeEmbedding::HpeAssociativeEmbedding(const std::string& modelFileNam
       targetSize(targetSize),
       confidenceThreshold(confidenceThreshold),
       delta(delta) {
-        resizeMode = resizeMode;
+        this->resizeMode = resizeMode;
         interpolationMode = cv::INTER_CUBIC;
       }
 
@@ -153,19 +153,19 @@ std::shared_ptr<InternalModelData> HpeAssociativeEmbedding::preprocess(const Inp
 std::unique_ptr<ResultBase> HpeAssociativeEmbedding::postprocess(InferenceResult& infResult) {
     HumanPoseResult* result = new HumanPoseResult(infResult.frameId, infResult.metaData);
 
-    const auto& aembds = infResult.outputsData[embeddingsTensorName];
+    auto &aembds = infResult.outputsData[embeddingsTensorName];
     const ov::Shape& aembdsShape = aembds.get_shape();
     float* const aembdsMapped = aembds.data<float>();
     std::vector<cv::Mat> aembdsMaps = split(aembdsMapped, aembdsShape);
 
-    const auto& heats = infResult.outputsData[heatmapsTensorName];
+    auto &heats = infResult.outputsData[heatmapsTensorName];
     const ov::Shape& heatMapsShape = heats.get_shape();
     float* const heatMapsMapped = heats.data<float>();
     std::vector<cv::Mat> heatMaps = split(heatMapsMapped, heatMapsShape);
 
     std::vector<cv::Mat> nmsHeatMaps = heatMaps;
     if (nmsHeatmapsTensorName != heatmapsTensorName) {
-        const auto& nmsHeats = infResult.outputsData[nmsHeatmapsTensorName];
+        auto& nmsHeats = infResult.outputsData[nmsHeatmapsTensorName];
         const ov::Shape& nmsHeatMapsShape = nmsHeats.get_shape();
         float* const nmsHeatMapsMapped = nmsHeats.data<float>();
         nmsHeatMaps = split(nmsHeatMapsMapped, nmsHeatMapsShape);

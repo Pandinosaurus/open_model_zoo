@@ -78,7 +78,7 @@ Options:
     -h                           Print a usage message.
     -i                           Required. An input to process. The input must be a single image, a folder of images, video file or camera id.
     -loop                        Optional. Enable reading the input in a loop.
-    -o "<path>"                  Optional. Name of the output file(s) to save.
+    -o "<path>"                  Optional. Name of the output file(s) to save. Frames of odd width or height can be truncated. See https://github.com/opencv/opencv/pull/24086
     -limit "<num>"               Optional. Number of frames to store in output. If 0 is set, all frames are stored.
     -m "<path>"                  Required. Path to the Person/Vehicle/Bike Detection Crossroad model (.xml) file.
     -m_pa "<path>"               Optional. Path to the Person Attributes Recognition Crossroad model (.xml) file.
@@ -139,5 +139,5 @@ You can use these metrics to measure application-level performance.
 ## See Also
 
 * [Open Model Zoo Demos](../../README.md)
-* [Model Optimizer](https://docs.openvino.ai/latest/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
+* [Model Optimizer](https://docs.openvino.ai/2023.0/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
 * [Model Downloader](../../../tools/model_tools/README.md)

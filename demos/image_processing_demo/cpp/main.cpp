@@ -1,5 +1,5 @@
 /*
-// Copyright (C) 2021-2022 Intel Corporation
+// Copyright (C) 2021-2024 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@
 #include <opencv2/imgproc.hpp>
 #include <openvino/openvino.hpp>
 
-#include <models/deblurring_model.h>
 #include <models/image_model.h>
 #include <models/input_data.h>
 #include <models/jpeg_restoration_model.h>
@@ -57,8 +56,9 @@ DEFINE_INPUT_FLAGS
 DEFINE_OUTPUT_FLAGS
 
 static const char help_message[] = "Print a usage message.";
-static const char at_message[] = "Required. Type of the model, either 'sr' for Super Resolution task, 'deblur' for "
-                                 "Deblurring, 'jr' for JPEGRestoration, 'style' for Style Transfer task.";
+static const char at_message[] = "Required. Type of the model, either 'sr' for Super Resolution task, "
+                                 "'sr_channel_joint' for Super Resolution model that accepts and returns 1 channel image, "
+                                 "'jr' for JPEGRestoration, 'style' for Style Transfer task.";
 static const char model_message[] = "Required. Path to an .xml file with a trained model.";
 static const char layout_message[] = "Optional. Specify inputs layouts."
                                      " Ex. NCHW or input0:NCHW,input1:NC in case of more than one input.";
@@ -72,13 +72,19 @@ static const char num_threads_message[] = "Optional. Number of threads.";
 static const char num_streams_message[] = "Optional. Number of streams to use for inference on the CPU or/and GPU in "
                                           "throughput mode (for HETERO and MULTI device cases use format "
                                           "<device1>:<nstreams1>,<device2>:<nstreams2> or just <nstreams>)";
-static const char no_show_processed_video[] = "Optional. Do not show processed video.";
+static const char no_show_processed_video[] = "Optional. Do not show processed video. If disabled and --output_resolution isn't set, "
+    "the resulting image is resized to a default view size: 1000x600 but keeping the aspect ratio";
 static const char utilization_monitors_message[] = "Optional. List of monitors to show initially.";
 static const char output_resolution_message[] =
     "Optional. Specify the maximum output window resolution "
     "in (width x height) format. Example: 1280x720. Input frame size used by default.";
 static const char jc_message[] = "Optional. Flag of using compression for jpeg images. "
                                  "Default value if false. Only for jr architecture type.";
+static const char reverse_input_channels_message[] = "Optional. Switch the input channels order from BGR to RGB.";
+static const char mean_values_message[] =
+    "Optional. Normalize input by subtracting the mean values per channel. Example: \"255.0 255.0 255.0\"";
+static const char scale_values_message[] = "Optional. Divide input by scale values per channel. Division is applied "
+                                           "after mean values subtraction. Example: \"255.0 255.0 255.0\"";
 
 DEFINE_bool(h, false, help_message);
 DEFINE_string(at, "", at_message);
@@ -92,6 +98,9 @@ DEFINE_bool(no_show, false, no_show_processed_video);
 DEFINE_string(u, "", utilization_monitors_message);
 DEFINE_string(output_resolution, "", output_resolution_message);
 DEFINE_bool(jc, false, jc_message);
+DEFINE_bool(reverse_input_channels, false, reverse_input_channels_message);
+DEFINE_string(mean_values, "", mean_values_message);
+DEFINE_string(scale_values, "", scale_values_message);
 
 /**
  * \brief This function shows a help message
@@ -117,6 +126,9 @@ static void showUsage() {
     std::cout << "    -output_resolution        " << output_resolution_message << std::endl;
     std::cout << "    -u                        " << utilization_monitors_message << std::endl;
     std::cout << "    -jc                       " << jc_message << std::endl;
+    std::cout << "    -reverse_input_channels   " << reverse_input_channels_message << std::endl;
+    std::cout << "    -mean_values              " << mean_values_message << std::endl;
+    std::cout << "    -scale_values             " << scale_values_message << std::endl;
 }
 
 bool ParseAndCheckCommandLine(int argc, char* argv[]) {
@@ -149,8 +161,8 @@ std::unique_ptr<ImageModel> getModel(const cv::Size& frameSize, const std::strin
     if (type == "sr") {
         return std::unique_ptr<ImageModel>(new SuperResolutionModel(FLAGS_m, frameSize, FLAGS_layout));
     }
-    if (type == "deblur") {
-        return std::unique_ptr<ImageModel>(new DeblurringModel(FLAGS_m, frameSize, FLAGS_layout));
+    if (type == "sr_channel_joint") {
+        return std::unique_ptr<ImageModel>(new SuperResolutionChannelJoint(FLAGS_m, frameSize, FLAGS_layout));
     }
     if (type == "jr") {
         return std::unique_ptr<ImageModel>(new JPEGRestorationModel(FLAGS_m, frameSize, doCompression, FLAGS_layout));
@@ -182,6 +194,7 @@ int main(int argc, char* argv[]) {
         ov::Core core;
 
         std::unique_ptr<ImageModel> model = getModel(cv::Size(curr_frame.cols, curr_frame.rows), FLAGS_at, FLAGS_jc);
+        model->setInputsPreprocessing(FLAGS_reverse_input_channels, FLAGS_mean_values, FLAGS_scale_values);
         AsyncPipeline pipeline(std::move(model),
                                ConfigFactory::getUserConfig(FLAGS_d, FLAGS_nireq, FLAGS_nstreams, FLAGS_nthreads),
                                core);
@@ -209,7 +222,7 @@ int main(int argc, char* argv[]) {
             if (found == std::string::npos) {
                 outputResolution = result->asRef<ImageResult>().resultImage.size();
                 cv::Size viewSize = view.getSize();
-                if (outputResolution.height > viewSize.height || outputResolution.width > viewSize.width)
+                if (!FLAGS_no_show && (outputResolution.height > viewSize.height || outputResolution.width > viewSize.width))
                     outputResolution = viewSize;
             } else {
                 outputResolution =
@@ -258,7 +271,7 @@ int main(int argc, char* argv[]) {
                     if (found == std::string::npos) {
                         outputResolution = result->asRef<ImageResult>().resultImage.size();
                         cv::Size viewSize = view.getSize();
-                        if (outputResolution.height > viewSize.height || outputResolution.width > viewSize.width)
+                        if (!FLAGS_no_show && (outputResolution.height > viewSize.height || outputResolution.width > viewSize.width))
                             outputResolution = viewSize;
                     } else {
                         outputResolution = cv::Size{
@@ -307,7 +320,7 @@ int main(int argc, char* argv[]) {
                     if (found == std::string::npos) {
                         outputResolution = result->asRef<ImageResult>().resultImage.size();
                         cv::Size viewSize = view.getSize();
-                        if (outputResolution.height > viewSize.height || outputResolution.width > viewSize.width)
+                        if (!FLAGS_no_show && (outputResolution.height > viewSize.height || outputResolution.width > viewSize.width))
                             outputResolution = viewSize;
                     } else {
                         outputResolution = cv::Size{

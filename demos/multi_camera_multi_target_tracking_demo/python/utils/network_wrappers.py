@@ -1,5 +1,5 @@
 """
- Copyright (c) 2019-2022 Intel Corporation
+ Copyright (c) 2019-2024 Intel Corporation
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -99,6 +99,12 @@ class Detector(IEModel, DetectorInterface):
         return detections
 
 
+def _remove_batch_dim_from_each_element_because_outputs_itself_is_a_list_representing_a_batch(outputs):
+    for idx, obj in enumerate(outputs):
+        assert 1 == obj.shape[0]
+        outputs[idx] = obj[0]
+
+
 class VectorCNN(IEModel):
     """Wrapper class for a network returning a vector"""
 
@@ -112,6 +118,7 @@ class VectorCNN(IEModel):
         for id, frame in enumerate(batch):
             super().forward_async(frame, id)
         outputs = self.grab_all_async()
+        _remove_batch_dim_from_each_element_because_outputs_itself_is_a_list_representing_a_batch(outputs)
         return outputs
 
     def forward_async(self, batch):
@@ -125,7 +132,7 @@ class VectorCNN(IEModel):
         return outputs
 
 
-class MaskRCNN(DetectorInterface):
+class MaskRCNN(IEModel, DetectorInterface):
     """Wrapper class for a network returning masks of objects"""
 
     def __init__(self, core, model_path, trg_classes, conf=.6,
@@ -185,16 +192,16 @@ class MaskRCNN(DetectorInterface):
         if im_info is not None:
             im_info = im_info.reshape(1, *im_info.shape)
             feed_dict['im_info'] = im_info
-        self.infer_request.infer(feed_dict)
+        self.infer_queue[0].infer(feed_dict)
         if self.segmentoly_type:
-            output = {name: self.infer_request.get_tensor(name).data[:] for name in self.output_keys_segmentoly}
+            output = {name: self.infer_queue[0].get_tensor(name).data for name in self.output_keys_segmentoly}
             valid_detections_mask = output['classes'] > 0
             classes = output['classes'][valid_detections_mask]
             boxes = output['boxes'][valid_detections_mask]
             scores = output['scores'][valid_detections_mask]
             masks = output['raw_masks'][valid_detections_mask]
         else:
-            output = {name: self.infer_request.get_tensor(name).data[:] for name in self.output_keys}
+            output = {name: self.infer_queue[0].get_tensor(name).data for name in self.output_keys}
             valid_detections_mask = np.sum(output['boxes'], axis=1) > 0
             classes = output['labels'][valid_detections_mask] + 1
             boxes = output['boxes'][valid_detections_mask][:, :4]

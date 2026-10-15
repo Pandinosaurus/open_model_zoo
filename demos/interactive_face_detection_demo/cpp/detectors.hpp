@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2022 Intel Corporation
+// Copyright (C) 2018-2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 //
 
@@ -11,6 +11,7 @@
 
 struct BaseDetection {
     ov::InferRequest request;
+    ov::Tensor inTensor;
     std::string pathToModel;
     ov::Shape inShape;
     const bool doRawOutputMessages;
@@ -31,7 +32,7 @@ struct FaceDetection : BaseDetection {
     std::string output;
     std::string labels_output;
     double detectionThreshold;
-    int objectSize;
+    size_t objectSize;
     float width;
     float height;
     size_t model_input_width;

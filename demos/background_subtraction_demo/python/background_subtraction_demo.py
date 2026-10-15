@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
- Copyright (C) 2021-2022 Intel Corporation
+ Copyright (C) 2021-2024 Intel Corporation
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import cv2
 import numpy as np
 
 sys.path.append(str(Path(__file__).resolve().parents[2] / 'common/python'))
-sys.path.append(str(Path(__file__).resolve().parents[2] / 'common/python/openvino/model_zoo'))
+sys.path.append(str(Path(__file__).resolve().parents[2] / 'common/python/model_zoo'))
 
 from model_api.models import (
     MaskRCNNModel, OutputTransform, RESIZE_TYPES, YolactModel,
@@ -56,9 +56,9 @@ def build_argparser():
                       help='Required. An input to process. The input must be a single image, '
                            'a folder of images, video file or camera id.')
     args.add_argument('-d', '--device', default='CPU', type=str,
-                      help='Optional. Specify the target device to infer on; CPU, GPU, HDDL or MYRIAD is '
-                           'acceptable. The demo will look for a suitable plugin for device specified. '
-                           'Default value is CPU.')
+                      help="Optional. Specify a device to infer on (the list of available devices is shown below). Use "
+                           "'-d HETERO:<comma-separated_devices_list>' format to specify HETERO plugin. Use "
+                           "'-d MULTI:<comma-separated_devices_list>' format to specify MULTI plugin. Default is CPU")
     args.add_argument('-t', '--prob_threshold', default=0.5, type=float,
                       help='Optional. Probability threshold for detections filtering.')
     args.add_argument('--resize_type', default=None, choices=RESIZE_TYPES.keys(),
@@ -91,7 +91,7 @@ def build_argparser():
     io_args.add_argument('--loop', default=False, action='store_true',
                          help='Optional. Enable reading the input in a loop.')
     io_args.add_argument('-o', '--output', required=False,
-                         help='Optional. Name of the output file(s) to save.')
+                         help='Optional. Name of the output file(s) to save. Frames of odd width or height can be truncated. See https://github.com/opencv/opencv/pull/24086')
     io_args.add_argument('-limit', '--output_limit', required=False, default=1000, type=int,
                          help='Optional. Number of frames to store in output. '
                               'If 0 is set, all frames are stored.')

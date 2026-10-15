@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
- Copyright (c) 2020-2022 Intel Corporation
+ Copyright (c) 2020-2024 Intel Corporation
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ from argparse import ArgumentParser, SUPPRESS
 from tqdm import tqdm
 import numpy as np
 import wave
-from openvino.runtime import Core, get_version
+from openvino import Core, get_version
 
 from models.forward_tacotron_ie import ForwardTacotronIE
 from models.mel2wave_ie import WaveRNNIE, MelGANIE
@@ -59,7 +59,7 @@ def build_argparser():
                       type=str)
 
     args.add_argument("-d", "--device",
-                      help="Optional. Specify the target device to infer on; CPU, GPU, HDDL, MYRIAD or HETERO is "
+                      help="Optional. Specify the target device to infer on; CPU, GPU or HETERO is "
                            "acceptable. The demo will look for a suitable plugin for device specified. "
                            "Default value is CPU",
                       default="CPU", type=str)

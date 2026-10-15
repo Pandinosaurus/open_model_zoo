@@ -1,5 +1,5 @@
 /*
-// Copyright (C) 2021-2022 Intel Corporation
+// Copyright (C) 2021-2024 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,4 +46,14 @@ public:
 protected:
     void changeInputSize(std::shared_ptr<ov::Model>& model, int coeff);
     void prepareInputsOutputs(std::shared_ptr<ov::Model>& model) override;
+};
+
+class SuperResolutionChannelJoint : public SuperResolutionModel {
+public:
+    using SuperResolutionModel::SuperResolutionModel;
+
+    std::shared_ptr<InternalModelData> preprocess(const InputData& inputData, ov::InferRequest& request) override;
+    std::unique_ptr<ResultBase> postprocess(InferenceResult& infResult) override;
+    void prepareInputsOutputs(std::shared_ptr<ov::Model>& model) override;
+    void setBatch(std::shared_ptr<ov::Model>& model) override;
 };

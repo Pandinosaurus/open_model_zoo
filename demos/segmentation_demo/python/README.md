@@ -14,7 +14,7 @@ On startup the demo application reads command line parameters and loads a model 
 
 ## Model API
 
-The demo utilizes model wrappers, adapters and pipelines from [Python* Model API](../../common/python/openvino/model_zoo/model_api/README.md).
+The demo utilizes model wrappers, adapters and pipelines from [Python* Model API](../../common/python/model_zoo/model_api/README.md).
 
 The generalized interface of wrappers with its unified results representation provides the support of multiple different semantic segmentation model topologies in one demo.
 
@@ -48,7 +48,6 @@ omz_converter --list models.lst
   - icnet-camvid-ava-0001
   - icnet-camvid-ava-sparse-30-0001
   - icnet-camvid-ava-sparse-60-0001
-  - ocrnet-hrnet-w48-paddle
   - pspnet-pytorch
   - road-segmentation-adas-0001
   - semantic-segmentation-adas-0001
@@ -58,13 +57,17 @@ omz_converter --list models.lst
 
 > **NOTE**: Refer to the tables [Intel's Pre-Trained Models Device Support](../../../models/intel/device_support.md) and [Public Pre-Trained Models Device Support](../../../models/public/device_support.md) for the details on models inference support at different devices.
 
+> **NOTE**: The results can significantly differ depending on the model used for background segmentation and outdoors camera images segmentation.
+
+![example](../segmentation_image.jpg)
+
 ## Running
 
 Running the application with the `-h` option yields the following usage message:
 
 ```
 usage: segmentation_demo.py [-h] -m MODEL -i INPUT
-                            [-at {segmentation,salient_object_detection}
+                            [-at {segmentation,salient_object_detection}]
                             [--adapter {openvino,ovms}] [-d DEVICE] [-c COLORS]
                             [-nireq NUM_INFER_REQUESTS]
                             [-nstreams NUM_STREAMS]
@@ -87,8 +90,8 @@ Options:
                         Optional. Specify the model adapter. Default is
                         openvino.
   -d DEVICE, --device DEVICE
-                        Optional. Specify the target device to infer on; CPU,
-                        GPU, HDDL or MYRIAD is acceptable. The demo
+                        Optional. Specify the target device to infer on; CPU or
+                        GPU is acceptable. The demo
                         will look for a suitable plugin for device specified.
                         Default value is CPU.
 
@@ -114,7 +117,7 @@ Inference options:
 Input/output options:
   --loop                Optional. Enable reading the input in a loop.
   -o OUTPUT, --output OUTPUT
-                        Optional. Name of the output file(s) to save.
+                        Optional. Name of the output file(s) to save. Frames of odd width or height can be truncated. See https://github.com/opencv/opencv/pull/24086
   -limit OUTPUT_LIMIT, --output_limit OUTPUT_LIMIT
                         Optional. Number of frames to store in output.
                         If 0 is set, all frames are stored.
@@ -158,7 +161,7 @@ Available colors files located in the `<omz_dir>/data/palettes` folder. If you w
 
 ## Running with OpenVINO Model Server
 
-You can also run this demo with model served in [OpenVINO Model Server](https://github.com/openvinotoolkit/model_server). Refer to [`OVMSAdapter`](../../common/python/openvino/model_zoo/model_api/adapters/ovms_adapter.md) to learn about running demos with OVMS.
+You can also run this demo with model served in [OpenVINO Model Server](https://github.com/openvinotoolkit/model_server). Refer to [`OVMSAdapter`](../../common/python/model_zoo/model_api/adapters/ovms_adapter.md) to learn about running demos with OVMS.
 
 Exemplary command:
 
@@ -188,5 +191,5 @@ You can use these metrics to measure application-level performance.
 ## See Also
 
 * [Open Model Zoo Demos](../../README.md)
-* [Model Optimizer](https://docs.openvino.ai/latest/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
+* [Model Optimizer](https://docs.openvino.ai/2023.0/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
 * [Model Downloader](../../../tools/model_tools/README.md)

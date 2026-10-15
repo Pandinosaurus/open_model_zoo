@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2022 Intel Corporation
+// Copyright (C) 2018-2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 //
 
@@ -142,7 +142,7 @@ void IEWrapper::reshape(const std::map<std::string, ov::Shape>& newTensorsDimsIn
     }
 
     std::map<std::string, ov::PartialShape> partial_shapes;
-    for (auto it : newTensorsDimsInfo) {
+    for (const std::pair<std::string, ov::Shape>& it : newTensorsDimsInfo) {
         ov::PartialShape newShape(it.second);
         partial_shapes[it.first] = newShape;
     }

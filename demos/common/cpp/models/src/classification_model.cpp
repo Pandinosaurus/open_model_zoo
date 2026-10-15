@@ -1,5 +1,5 @@
 /*
-// Copyright (C) 2020-2022 Intel Corporation
+// Copyright (C) 2020-2024 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -89,7 +89,7 @@ void ClassificationModel::prepareInputsOutputs(std::shared_ptr<ov::Model>& model
     // --------------------------- Configure input & output -------------------------------------------------
     // --------------------------- Prepare input  ------------------------------------------------------
     if (model->inputs().size() != 1) {
-        throw std::logic_error("Classification model wrapper supports topologies with only 1 input");
+        throw std::logic_error("Classification model wrapper supports topologies with only 1 input, but found: " + std::to_string(model->inputs().size()));
     }
     const auto& input = model->input();
     inputsNames.push_back(input.get_any_name());
@@ -110,7 +110,8 @@ void ClassificationModel::prepareInputsOutputs(std::shared_ptr<ov::Model>& model
     }
 
     ov::preprocess::PrePostProcessor ppp(model);
-    ppp.input().tensor().set_element_type(ov::element::u8).set_layout({"NHWC"});
+    inputTransform.setPrecision(ppp, model->input().get_any_name());
+    ppp.input().tensor().set_layout({ "NHWC" });
 
     if (useAutoResize) {
         ppp.input().tensor().set_spatial_dynamic_shape();
@@ -120,7 +121,6 @@ void ClassificationModel::prepareInputsOutputs(std::shared_ptr<ov::Model>& model
             .convert_element_type(ov::element::f32)
             .resize(ov::preprocess::ResizeAlgorithm::RESIZE_LINEAR);
     }
-
     ppp.input().model().set_layout(inputLayout);
 
     // --------------------------- Prepare output  -----------------------------------------------------
@@ -158,19 +158,11 @@ void ClassificationModel::prepareInputsOutputs(std::shared_ptr<ov::Model>& model
     model = ppp.build();
 
     // --------------------------- Adding softmax and topK output  ---------------------------
-    auto nodes = model->get_ops();
-    auto softmaxNodeIt = std::find_if(std::begin(nodes), std::end(nodes), [](const std::shared_ptr<ov::Node>& op) {
-        return std::string(op->get_type_name()) == "Softmax";
-    });
+    auto logitsNode = model->get_output_op(0)->input(0).get_source_output().get_node();
 
-    std::shared_ptr<ov::Node> softmaxNode;
-    if (softmaxNodeIt == nodes.end()) {
-        auto logitsNode = model->get_output_op(0)->input(0).get_source_output().get_node();
-        softmaxNode = std::make_shared<ov::op::v1::Softmax>(logitsNode->output(0), 1);
-    } else {
-        softmaxNode = *softmaxNodeIt;
-    }
+    std::shared_ptr<ov::Node> softmaxNode = std::make_shared<ov::op::v1::Softmax>(logitsNode->output(0), 1);
     const auto k = std::make_shared<ov::op::v0::Constant>(ov::element::i32, ov::Shape{}, std::vector<size_t>{nTop});
+
     std::shared_ptr<ov::Node> topkNode = std::make_shared<ov::op::v3::TopK>(softmaxNode,
                                                                             k,
                                                                             1,

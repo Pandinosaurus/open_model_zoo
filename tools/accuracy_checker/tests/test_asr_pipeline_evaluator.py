@@ -1,0 +1,118 @@
+"""
+Copyright (c) 2026 Intel Corporation
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
+from pathlib import Path
+
+import pytest
+from accuracy_checker.evaluators.custom_evaluators.asr_pipeline_evaluator import (
+    ASRPipelineEvaluator,
+    GenAIASRPipeline,
+    HFASRPipeline,
+    HFFunASRPipeline,
+)
+from datasets import load_dataset
+
+AutoProcessor = pytest.importorskip(
+    "transformers", reason="transformers is not available"
+).AutoProcessor
+AutoTokenizer = pytest.importorskip(
+    "transformers", reason="transformers is not available"
+).AutoTokenizer
+export_tokenizer = pytest.importorskip(
+    "optimum.exporters.openvino.convert",
+    reason="optimum.exporters.openvino.convert is not available",
+).export_tokenizer
+OVModelForSpeechSeq2Seq = pytest.importorskip(
+    "optimum.intel.openvino", reason="optimum.intel.openvino is not available"
+).OVModelForSpeechSeq2Seq
+pytest.importorskip("openvino_genai", reason="openvino_genai is not available")
+
+
+model_id = "openai/whisper-tiny"
+model_dir = Path("/tmp/asr-whisper-tiny")
+
+
+def setup_module(module):
+    global input_data, input_meta, identifiers
+
+    dataset = load_dataset(
+        "openslr/librispeech_asr",
+        "clean",
+        split="validation",
+        streaming=True,
+        trust_remote_code=True,
+    )
+    sample = next(iter(dataset))
+    input_data = [sample["audio"]["array"]]
+    input_meta = [{"sample_rate": sample["audio"]["sampling_rate"]}]
+    identifiers = [sample["id"]]
+
+
+def teardown_module(module):
+    if model_dir.exists():
+        for item in model_dir.iterdir():
+            if item.is_file():
+                item.unlink()
+        model_dir.rmdir()
+
+
+def test_optimum_convert_model_to_ir():
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    processor = AutoProcessor.from_pretrained(model_id)
+    base_model = OVModelForSpeechSeq2Seq.from_pretrained(model_id)
+
+    model_dir.mkdir(parents=True, exist_ok=True)
+    base_model.save_pretrained(model_dir)
+    tokenizer.save_pretrained(model_dir)
+    processor.save_pretrained(model_dir)
+    export_tokenizer(tokenizer, model_dir)
+
+    assert base_model.__class__.__module__.startswith("optimum.intel.openvino")
+
+
+class TestASRPipelineEvaluator:
+    @pytest.mark.dependency(depends=["test_optimum_convert_model_to_ir"])
+    def test_genai_asr_pipeline(self):
+        config = {"_models": [model_dir], "_device": "CPU"}
+        pipeline = GenAIASRPipeline(config)
+        evaluator = ASRPipelineEvaluator(None, pipeline, None)
+
+        result = evaluator.pipe._get_predictions(input_data, identifiers[0], input_meta)
+        assert isinstance(result, str)
+
+    def test_hf_asr_pipeline_qwen3_asr(self):
+        config = {"_device": "CPU", "model_id": "Qwen/Qwen3-ASR-0.6B"}
+        pipeline = HFASRPipeline(config)
+        evaluator = ASRPipelineEvaluator(None, pipeline, None)
+
+        result = evaluator.pipe._get_predictions(input_data, identifiers[0], input_meta)
+        assert isinstance(result, str)
+
+    def test_hf_asr_pipeline_whisper_tiny(self):
+        config = {"_device": "CPU", "model_id": "openai/whisper-tiny"}
+        pipeline = HFASRPipeline(config)
+        evaluator = ASRPipelineEvaluator(None, pipeline, None)
+
+        result = evaluator.pipe._get_predictions(input_data, identifiers[0], input_meta)
+        assert isinstance(result, str)
+
+    def test_hf_fun_asr_pipeline(self):
+        config = {"_device": "CPU", "model_id": "FunAudioLLM/Fun-ASR-Nano-2512", "language": "英文"}
+        pipeline = HFFunASRPipeline(config)
+        evaluator = ASRPipelineEvaluator(None, pipeline, None)
+
+        result = evaluator.pipe._get_predictions(input_data, identifiers[0], input_meta)
+        assert isinstance(result, str)

@@ -1,5 +1,5 @@
 """
- Copyright (C) 2020 Intel Corporation
+ Copyright (C) 2020-2024 Intel Corporation
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -14,6 +14,11 @@
  limitations under the License.
 """
 
+import os
+if hasattr(os, "add_dll_directory"):
+    for path in os.environ.get("PATH", "").split(";"):
+        if os.path.isdir(path):
+            os.add_dll_directory(path)
 try:
     from monitors_extension import Presenter
 except ImportError:

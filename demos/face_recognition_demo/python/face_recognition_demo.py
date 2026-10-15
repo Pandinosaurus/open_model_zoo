@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
- Copyright (c) 2018-2022 Intel Corporation
+ Copyright (c) 2018-2024 Intel Corporation
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@ from time import perf_counter
 
 import cv2
 import numpy as np
-from openvino.runtime import Core, get_version
+from openvino import Core, get_version
 
 sys.path.append(str(Path(__file__).resolve().parents[2] / 'common/python'))
-sys.path.append(str(Path(__file__).resolve().parents[2] / 'common/python/openvino/model_zoo'))
+sys.path.append(str(Path(__file__).resolve().parents[2] / 'common/python/model_zoo'))
 
 from utils import crop
 from landmarks_detector import LandmarksDetector
@@ -43,7 +43,7 @@ from model_api.performance_metrics import PerformanceMetrics
 
 log.basicConfig(format='[ %(levelname)s ] %(message)s', level=log.DEBUG, stream=sys.stdout)
 
-DEVICE_KINDS = ['CPU', 'GPU', 'MYRIAD', 'HETERO', 'HDDL']
+DEVICE_KINDS = ['CPU', 'GPU', 'HETERO']
 
 
 def build_argparser():
@@ -56,7 +56,7 @@ def build_argparser():
     general.add_argument('--loop', default=False, action='store_true',
                          help='Optional. Enable reading the input in a loop.')
     general.add_argument('-o', '--output',
-                         help='Optional. Name of the output file(s) to save.')
+                         help='Optional. Name of the output file(s) to save. Frames of odd width or height can be truncated. See https://github.com/opencv/opencv/pull/24086')
     general.add_argument('-limit', '--output_limit', default=1000, type=int,
                          help='Optional. Number of frames to store in output. '
                               'If 0 is set, all frames are stored.')
@@ -228,7 +228,7 @@ def main():
             if frame_num == 0:
                 raise ValueError("Can't read an image from the input")
             break
-        if input_crop it not None:
+        if input_crop is not None:
             frame = center_crop(frame, input_crop)
         if frame_num == 0:
             output_transform = OutputTransform(frame.shape[:2], args.output_resolution)

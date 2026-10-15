@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
- Copyright (c) 2019-2022 Intel Corporation
+ Copyright (c) 2019-2024 Intel Corporation
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -20,7 +20,7 @@ from time import perf_counter
 
 import numpy as np
 import cv2
-from openvino.runtime import Core, get_version
+from openvino import Core, get_version
 
 from inpainting_gui import InpaintingGUI
 from inpainting import ImageInpainting
@@ -36,7 +36,7 @@ def build_arg_parser():
                       required=True, type=Path)
     args.add_argument("-i", "--input", required=True, help="Required. Path to image.")
     args.add_argument("-d", "--device",
-                      help="Optional. Specify the target device to infer on; CPU, GPU, HDDL or MYRIAD is "
+                      help="Optional. Specify the target device to infer on; CPU or GPU is "
                            "acceptable. The demo will look for a suitable plugin for device specified. "
                            "Default value is CPU", default="CPU", type=str)
     args.add_argument("-p", "--parts", help="Optional. Number of parts to draw mask. Ignored in GUI mode",
@@ -78,8 +78,8 @@ def create_random_mask(parts, max_vertex, max_length, max_brush_width, h, w, max
             next_y = start_y + length * np.cos(angle)
             next_x = start_x + length * np.sin(angle)
 
-            next_y = np.clip(next_y, 0, h - 1).astype(np.int)
-            next_x = np.clip(next_x, 0, w - 1).astype(np.int)
+            next_y = np.clip(next_y, 0, h - 1).astype(np.int32)
+            next_x = np.clip(next_x, 0, w - 1).astype(np.int32)
             cv2.line(mask, (start_y, start_x), (next_y, next_x), 1, brush_width)
             cv2.circle(mask, (start_y, start_x), brush_width // 2, 1)
 

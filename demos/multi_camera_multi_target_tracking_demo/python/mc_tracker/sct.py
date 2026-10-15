@@ -1,5 +1,5 @@
 """
- Copyright (c) 2019 Intel Corporation
+ Copyright (c) 2019-2024 Intel Corporation
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -43,7 +43,7 @@ class ClusterFeature:
             self.clusters.append(feature_vec)
             self.clusters_sizes.append(1)
         elif sum(self.clusters_sizes) < 2*self.feature_len:
-            idx = random.randint(0, self.feature_len - 1) # nosec - disable B311:random check
+            idx = random.randint(0, self.feature_len - 1)  # nosec B311  # disable random check
             self.clusters_sizes[idx] += 1
             self.clusters[idx] += (feature_vec - self.clusters[idx]) / \
                                             self.clusters_sizes[idx]
@@ -511,8 +511,8 @@ class SingleCameraTracker:
                 reid_dist_curr, reid_dist_avg, reid_dist_clust = None, None, None
                 if self.tracks[idx].f_avg.is_valid() and features[j] is not None \
                         and self.tracks[idx].get_last_feature() is not None:
-                    reid_dist_avg = 0.5 * cosine(self.tracks[idx].f_avg.get(), features[j])
-                    reid_dist_curr = 0.5 * cosine(self.tracks[idx].get_last_feature(), features[j])
+                    reid_dist_avg = 0.5 * cosine(self.tracks[idx].f_avg.get().squeeze(), features[j].squeeze())
+                    reid_dist_curr = 0.5 * cosine(self.tracks[idx].get_last_feature().squeeze(), features[j].squeeze())
 
                     if self.process_curr_features_number > 0:
                         num_features = len(self.tracks[idx])

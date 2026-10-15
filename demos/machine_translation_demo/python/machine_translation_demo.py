@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
- Copyright (c) 2020-2021 Intel Corporation
+ Copyright (c) 2020-2024 Intel Corporation
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -20,7 +20,7 @@ from time import perf_counter
 from pathlib import Path
 
 import numpy as np
-from openvino.runtime import Core, get_version
+from openvino import Core, get_version
 from tokenizers import SentencePieceBPETokenizer
 
 log.basicConfig(format='[ %(levelname)s ] %(message)s', level=log.DEBUG, stream=sys.stdout)
@@ -189,7 +189,7 @@ def build_argparser():
     parser.add_argument('-i', '--input', type=str, required=False, nargs='*',
                         help='Optional. Text for translation or path to the input .txt file. Replaces console input.')
     parser.add_argument('-d', '--device', default='CPU', type=str,
-                        help='Optional. Specify the target device to infer on; CPU, GPU, HDDL or MYRIAD is '
+                        help='Optional. Specify the target device to infer on; CPU or GPU is '
                              'acceptable. The demo will look for a suitable plugin for device specified. '
                              'Default value is CPU.')
     parser.add_argument('-o', '--output', required=False, type=str,

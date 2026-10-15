@@ -1,5 +1,5 @@
 /*
-// Copyright (C) 2022 Intel Corporation
+// Copyright (C) 2022-2024 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -112,8 +112,8 @@ void ModelYoloX::setStridesGrids() {
 std::shared_ptr<InternalModelData> ModelYoloX::preprocess(const InputData& inputData,
                                                           ov::InferRequest& request) {
     const auto& origImg = inputData.asRef<ImageInputData>().inputImage;
-    double scale = std::min(static_cast<double>(netInputWidth) / origImg.cols,
-                            static_cast<double>(netInputHeight) / origImg.rows);
+    float scale = std::min(static_cast<float>(netInputWidth) / origImg.cols,
+                           static_cast<float>(netInputHeight) / origImg.rows);
 
     cv::Mat resizedImage = resizeImageExt(origImg, netInputWidth, netInputHeight, resizeMode,
                                           interpolationMode, nullptr, cv::Scalar(114, 114, 114));
@@ -127,7 +127,7 @@ std::unique_ptr<ResultBase> ModelYoloX::postprocess(InferenceResult& infResult) 
     const auto& scale = infResult.internalModelData->asRef<InternalScaleData>();
 
     // Get output tensor
-    const ov::Tensor& output = infResult.outputsData[outputsNames[0]];
+    ov::Tensor &output = infResult.outputsData[outputsNames[0]];
     const auto& outputShape = output.get_shape();
     float* outputPtr = output.data<float>();
 

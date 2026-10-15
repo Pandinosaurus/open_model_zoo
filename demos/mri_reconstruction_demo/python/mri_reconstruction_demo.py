@@ -1,4 +1,4 @@
-# Copyright (C) 2018-2022 Intel Corporation
+# Copyright (C) 2018-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 #
 import argparse
@@ -8,13 +8,13 @@ import sys
 
 import numpy as np
 import cv2 as cv
-from openvino.runtime import Core
+from openvino import Core
 
 logging.basicConfig(format='[ %(levelname)s ] %(message)s', level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger('mri_reconstruction_demo')
 
 def kspace_to_image(kspace):
-    assert(len(kspace.shape) == 3 and kspace.shape[-1] == 2)
+    assert len(kspace.shape) == 3 and kspace.shape[-1] == 2
     fft = cv.idft(kspace, flags=cv.DFT_SCALE)
     img = cv.magnitude(fft[:, :, 0], fft[:, :, 1])
     return cv.normalize(img, dst=None, alpha=255, beta=0, norm_type=cv.NORM_MINMAX, dtype=cv.CV_8U)
@@ -29,8 +29,8 @@ def build_argparser():
     parser.add_argument('-m', '--model', dest='model', required=True,
                         help='Path to .xml file of OpenVINO IR.')
     parser.add_argument('-d', '--device', dest='device', default='CPU',
-                        help='Optional. Specify the target device to infer on; CPU, '
-                             'GPU, HDDL or MYRIAD is acceptable. Default value is CPU.')
+                        help='Optional. Specify the target device to infer on; CPU or '
+                             'GPU is acceptable. Default value is CPU.')
     parser.add_argument('--no_show', action='store_true',
                         help='Disable results visualization')
     return parser

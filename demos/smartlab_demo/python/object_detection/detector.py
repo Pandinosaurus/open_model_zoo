@@ -1,5 +1,5 @@
 """
- Copyright (c) 2021-2022 Intel Corporation
+ Copyright (c) 2021-2024 Intel Corporation
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -105,7 +105,7 @@ class Detector:
         self.all_classes += list(self.top_loc_exp.mw_classes)
         self.all_classes += list(self.side_glb_exp.mw_classes)
         self.all_classes += list(self.side_loc_exp.mw_classes)
-        self.all_classes = sorted(list(set(self.all_classes)))
+        self.all_classes = sorted(set(self.all_classes))
 
         #  max-number constraints:
         self.max_nums = {

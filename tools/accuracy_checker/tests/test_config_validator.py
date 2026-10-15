@@ -1,5 +1,5 @@
 """
-Copyright (c) 2018-2022 Intel Corporation
+Copyright (c) 2018-2024 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@ from pathlib import Path
 from unittest.mock import ANY
 
 import pytest
-from openvino.tools.accuracy_checker.config.config_validator import (
+import numpy as np
+from accuracy_checker.config.config_validator import (
     ConfigError,
     ConfigValidator,
     DictField,
@@ -30,16 +31,16 @@ from openvino.tools.accuracy_checker.config.config_validator import (
     BaseField,
     BoolField
 )
-from openvino.tools.accuracy_checker.evaluators import ModelEvaluator
-from openvino.tools.accuracy_checker.launcher import Launcher
-from openvino.tools.accuracy_checker.dataset import Dataset
-from openvino.tools.accuracy_checker.metrics import Metric
-from openvino.tools.accuracy_checker.postprocessor import Postprocessor
-from openvino.tools.accuracy_checker.preprocessor import Preprocessor
-from openvino.tools.accuracy_checker.data_readers import BaseReader
-from openvino.tools.accuracy_checker.annotation_converters import BaseFormatConverter
-from openvino.tools.accuracy_checker.adapters import Adapter
-from openvino.tools.accuracy_checker.utils import contains_all
+from accuracy_checker.evaluators import ModelEvaluator
+from accuracy_checker.launcher import Launcher
+from accuracy_checker.dataset import Dataset
+from accuracy_checker.metrics import Metric
+from accuracy_checker.postprocessor import Postprocessor
+from accuracy_checker.preprocessor import Preprocessor
+from accuracy_checker.data_readers import BaseReader
+from accuracy_checker.annotation_converters import BaseFormatConverter
+from accuracy_checker.adapters import Adapter
+from accuracy_checker.utils import contains_all
 from tests.common import mock_filesystem
 
 
@@ -292,6 +293,89 @@ class TestPathField:
             prefix_path = Path(prefix)
             file_field = PathField(is_directory=False, check_exists=False)
             file_field.validate(prefix_path / 'foo' / 'bar')
+
+
+class TestBaseReaderRetry:
+    def test_retry_transient_read_error(self):
+        class FlakyReader(BaseReader):
+            __provider__ = 'flaky_reader'
+
+            def __init__(self, *args, **kwargs):
+                self.read_attempts = 0
+                super().__init__(*args, **kwargs)
+
+            def read(self, data_id):
+                self.read_attempts += 1
+                if self.read_attempts < 2:
+                    raise OSError('temporary network error')
+                return np.array([data_id])
+
+        reader = FlakyReader(
+            None, config={'read_retry_attempts': 2, 'initial_retry_delay': 0}, postpone_data_source=True
+        )
+
+        data_representation = reader(7)
+
+        assert np.array_equal(data_representation.data, np.array([7]))
+        assert reader.read_attempts == 2
+
+    def test_total_retries_budget_exhausted_across_reads(self):
+        class AlwaysFlakyReader(BaseReader):
+            __provider__ = 'always_flaky_reader'
+
+            def __init__(self, *args, **kwargs):
+                self.read_attempts = 0
+                super().__init__(*args, **kwargs)
+
+            def read(self, data_id):
+                self.read_attempts += 1
+                raise OSError('persistent network error')
+
+        reader = AlwaysFlakyReader(
+            None,
+            config={'read_retry_attempts': 4, 'read_total_retries': 2, 'initial_retry_delay': 0},
+            postpone_data_source=True
+        )
+
+        with pytest.raises(OSError):
+            reader(1)
+        assert reader.read_attempts == 3  # 1 initial + 2 retries consumed the whole total budget
+
+        reader.read_attempts = 0
+        with pytest.raises(OSError):
+            reader(2)
+        assert reader.read_attempts == 1  # no retries left, fails immediately
+
+    def test_retry_delay_escalates_and_persists_across_reads(self, mocker):
+        class FlakyReader(BaseReader):
+            __provider__ = 'delay_flaky_reader'
+
+            def __init__(self, *args, **kwargs):
+                self.fail_next = 0
+                super().__init__(*args, **kwargs)
+
+            def read(self, data_id):
+                if self.fail_next > 0:
+                    self.fail_next -= 1
+                    raise OSError('temporary network error')
+                return np.array([data_id])
+
+        sleep_mock = mocker.patch('accuracy_checker.data_readers.data_reader.time.sleep')
+
+        reader = FlakyReader(
+            None,
+            config={'read_retry_attempts': 4, 'read_total_retries': 10, 'initial_retry_delay': 0.1},
+            postpone_data_source=True
+        )
+
+        reader.fail_next = 2
+        reader(1)
+        assert [call.args[0] for call in sleep_mock.call_args_list] == [0.1, 0.2]
+
+        # delay is not reset back to initial_retry_delay for the next read, it keeps escalating
+        reader.fail_next = 1
+        reader(2)
+        assert [call.args[0] for call in sleep_mock.call_args_list] == [0.1, 0.2, 0.4]
 
 
 class TestConfigValidator:

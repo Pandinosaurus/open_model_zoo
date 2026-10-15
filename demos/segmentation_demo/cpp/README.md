@@ -41,13 +41,16 @@ omz_converter --list models.lst
 * icnet-camvid-ava-0001
 * icnet-camvid-ava-sparse-30-0001
 * icnet-camvid-ava-sparse-60-0001
-* ocrnet-hrnet-w48-paddle
 * pspnet-pytorch
 * road-segmentation-adas-0001
 * semantic-segmentation-adas-0001
 * unet-camvid-onnx-0001
 
 > **NOTE**: Refer to the tables [Intel's Pre-Trained Models Device Support](../../../models/intel/device_support.md) and [Public Pre-Trained Models Device Support](../../../models/public/device_support.md) for the details on models inference support at different devices.
+
+> **NOTE**: The results can significantly differ depending on the model used for background segmentation and outdoors camera images segmentation.
+
+![example](../segmentation_image.jpg)
 
 ## Running
 
@@ -59,7 +62,7 @@ Options:
     -h                        Print a usage message.
     -i                        Required. An input to process. The input must be a single image, a folder of images, video file or camera id.
     -m "<path>"               Required. Path to an .xml file with a trained model.
-    -o "<path>"               Optional. Name of the output file(s) to save.
+    -o "<path>"               Optional. Name of the output file(s) to save. Frames of odd width or height can be truncated. See https://github.com/opencv/opencv/pull/24086
     -limit "<num>"            Optional. Number of frames to store in output. If 0 is set, all frames are stored.
     -d "<device>"             Optional. Specify the target device to infer on (the list of available devices is shown below). Default value is CPU. Use "-d HETERO:<comma-separated_devices_list>" format to specify HETERO plugin. The demo will look for a suitable plugin for a specified device.
     -labels "<path>"          Optional. Path to a file with labels mapping.
@@ -112,5 +115,5 @@ You can use these metrics to measure application-level performance.
 ## See Also
 
 * [Open Model Zoo Demos](../../README.md)
-* [Model Optimizer](https://docs.openvino.ai/latest/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
+* [Model Optimizer](https://docs.openvino.ai/2023.0/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
 * [Model Downloader](../../../tools/model_tools/README.md)

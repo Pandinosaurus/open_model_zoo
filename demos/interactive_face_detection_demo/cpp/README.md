@@ -61,7 +61,6 @@ omz_converter --list models.lst
 * face-detection-adas-0001
 * face-detection-retail-0004
 * face-detection-retail-0005
-* face-detection-retail-0044
 * facial-landmarks-35-adas-0002
 * head-pose-estimation-adas-0001
 
@@ -130,5 +129,5 @@ You can use these metrics to measure application-level performance.
 ## See Also
 
 * [Open Model Zoo Demos](../../README.md)
-* [Model Optimizer](https://docs.openvino.ai/latest/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
+* [Model Optimizer](https://docs.openvino.ai/2023.0/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
 * [Model Downloader](../../../tools/model_tools/README.md)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) 2020 Intel Corporation
+# Copyright (c) 2020-2024 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ def main():
     model = tf.keras.applications.DenseNet121(
         weights=str(args.input_dir / 'densenet121_weights_tf_dim_ordering_tf_kernels.h5')
     )
-    model.save(filepath=args.output_dir / 'densenet-121.savedmodel')
+    model.export(filepath=args.output_dir / 'densenet-121.savedmodel')
 
 
 if __name__ == '__main__':

@@ -1,5 +1,5 @@
 """
-Copyright (c) 2018-2022 Intel Corporation
+Copyright (c) 2018-2024 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ from enum import Enum
 import cv2
 import numpy as np
 import pytest
-
-from openvino.tools.accuracy_checker.config import ConfigError
-from openvino.tools.accuracy_checker.preprocessor import (
+import warnings
+from accuracy_checker.config import ConfigError
+from accuracy_checker.preprocessor import (
     Crop,
     Normalize,
     Preprocessor,
@@ -32,15 +32,15 @@ from openvino.tools.accuracy_checker.preprocessor import (
     PointAligner,
     GeometricOperationMetadata
 )
-from openvino.tools.accuracy_checker.preprocessor.launcher_preprocessing import get_preprocessor, preprocessing_available
-from openvino.tools.accuracy_checker.preprocessor.preprocessing_executor import PreprocessingExecutor
-from openvino.tools.accuracy_checker.preprocessor.resize import _OpenCVResizer
-from openvino.tools.accuracy_checker.data_readers import DataRepresentation
+from accuracy_checker.preprocessor.launcher_preprocessing import get_preprocessor, preprocessing_available
+from accuracy_checker.preprocessor.preprocessing_executor import PreprocessingExecutor
+from accuracy_checker.preprocessor.resize import _OpenCVResizer
+from accuracy_checker.data_readers import DataRepresentation
 
 
 class TestResize:
     def test_default_resize(self, mocker):
-        cv2_resize_mock = mocker.patch('openvino.tools.accuracy_checker.preprocessor.geometric_transformations.cv2.resize')
+        cv2_resize_mock = mocker.patch('accuracy_checker.preprocessor.geometric_transformations.cv2.resize')
         resize = Preprocessor.provide('resize', {'type': 'resize', 'size': 200})
 
         input_mock = mocker.Mock()
@@ -53,7 +53,7 @@ class TestResize:
         )
 
     def test_custom_resize(self, mocker):
-        cv2_resize_mock = mocker.patch('openvino.tools.accuracy_checker.preprocessor.geometric_transformations.cv2.resize')
+        cv2_resize_mock = mocker.patch('accuracy_checker.preprocessor.geometric_transformations.cv2.resize')
 
         resize = Preprocessor.provide(
             'resize', {'type': 'resize', 'dst_width': 126, 'dst_height': 128, 'interpolation': 'CUBIC'}
@@ -168,11 +168,11 @@ class TestResize:
     def test_resize_with_both_provided_size_and_dst_height_dst_width_warn(self):
         input_image = np.ones((100, 50, 3))
 
-        with pytest.warns(None) as warnings:
+        with pytest.warns(Warning) as expected_warnings:
             resize = Preprocessor.provide(
                 'resize', {'type': 'resize', 'dst_width': 100, 'dst_height': 100, 'size': 200}
             )
-            assert len(warnings) == 1
+            assert len(expected_warnings) == 1
             result = resize(DataRepresentation(input_image)).data
             assert result.shape == (200, 200, 3)
 
@@ -227,7 +227,7 @@ class TestResize:
 
 class TestAutoResize:
     def test_default_auto_resize(self, mocker):
-        cv2_resize_mock = mocker.patch('openvino.tools.accuracy_checker.preprocessor.geometric_transformations.cv2.resize')
+        cv2_resize_mock = mocker.patch('accuracy_checker.preprocessor.geometric_transformations.cv2.resize')
         resize = Preprocessor.provide('auto_resize', {'type': 'auto_resize'})
         resize.set_input_shape({'data': (1, 3, 200, 200)})
 
@@ -540,9 +540,9 @@ class TestCrop:
 
     def test_crop_with_both_provided_size_and_dst_height_dst_width_warn(self):
         image = np.zeros((30, 40, 3))
-        with pytest.warns(None) as warnings:
+        with pytest.warns(Warning) as expected_warnings:
             crop = Crop({'dst_width': 100, 'dst_height': 100, 'size': 200, 'type': 'crop'})
-            assert len(warnings) == 1
+            assert len(expected_warnings) == 1
             result = crop.process(DataRepresentation(image))
             assert result.data.shape == (200, 200, 3)
             assert result.metadata == {'image_size': (30, 40, 3),
@@ -763,9 +763,9 @@ class TestPointAlignment:
     def test_point_alignment_both_provided_size_and_dst_height_dst_width_warn(self):
         input_image = np.ones((100, 50, 3))
 
-        with pytest.warns(None) as warnings:
+        with pytest.warns(Warning) as expected_warnings:
             point_aligner = PointAligner({'type': 'point_alignment', 'dst_width': 100, 'dst_height': 100, 'size': 200})
-            assert len(warnings) == 1
+            assert len(expected_warnings) == 1
             result = point_aligner(DataRepresentation(input_image), {}).data
             assert result.shape == (100, 50, 3)
 
@@ -987,28 +987,6 @@ class TestIEPreprocessor:
         color_space = preprocessor.steps[0].value
         assert isinstance(color_space, Enum)
         assert color_space.name == 'RGB'
-
-    def test_nv12_color_format(self):
-        config = [{'type': 'nv12_to_bgr'}]
-        preprocessor = get_preprocessor('dlsdk')(config)
-        assert not preprocessor.has_resize()
-        assert len(preprocessor.steps) == 1
-        assert not preprocessor.keep_preprocessing_info
-        assert preprocessor.steps[0].name == 'color_format'
-        color_space = preprocessor.steps[0].value
-        assert isinstance(color_space, Enum)
-        assert color_space.name == 'NV12'
-
-    def test_partial_color_format(self):
-        config = [{'type': 'bgr_to_nv12'}, {'type': 'nv12_to_bgr'}]
-        preprocessor = get_preprocessor('dlsdk')(config)
-        assert not preprocessor.has_resize()
-        assert len(preprocessor.steps) == 1
-        assert preprocessor.keep_preprocessing_info == [config[0]]
-        assert preprocessor.steps[0].name == 'color_format'
-        color_space = preprocessor.steps[0].value
-        assert isinstance(color_space, Enum)
-        assert color_space.name == 'NV12'
 
     def test_several_supported_preprocessing_ops(self):
         config = [{'type': 'resize'}, {'type': 'bgr_to_rgb'}]

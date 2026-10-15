@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2020-2021 Intel Corporation
+# Copyright (C) 2020-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 #
 from copy import deepcopy
@@ -79,17 +79,17 @@ def samples_to_melspectrum(samples, sampling_rate, window_size, stride, n_mels, 
     window_size, stride = round(window_size), round(stride)
 
     # window_size must be a power of 2 to match tf:
-    if not(window_size > 0  and  (window_size - 1) & window_size == 0):
+    if not (window_size > 0 and (window_size - 1) & window_size == 0):
         raise ValueError("window_size(ms)*sampling_rate(kHz) must be a power of two")
 
-    spec = np.abs(librosa.core.spectrum.stft(
+    spec = np.abs(librosa.stft(
         samples,
         n_fft=window_size, hop_length=stride, win_length=window_size,
         center=False, window='hann', pad_mode='reflect',
     ))
     # match tf: norm=None
     mel_basis = librosa.filters.mel(
-        sampling_rate, window_size,
+        sr=sampling_rate, n_fft=window_size,
         n_mels=n_mels, fmin=fmin, fmax=fmax,
         norm=None, htk=True,
     )

@@ -71,8 +71,8 @@ Options:
                         Required. Path to a folder where output files will be
                         saved
   -d DEVICE, --device DEVICE
-                        Optional. Specify the target device to infer on; CPU,
-                        GPU, HDDL or MYRIAD is acceptable. Default
+                        Optional. Specify the target device to infer on; CPU or
+                        GPU is acceptable. Default
                         value is CPU
 ```
 
@@ -117,5 +117,5 @@ The results of the demo processing are saved to a folder that is specified by th
 ## See Also
 
 * [Open Model Zoo Demos](../../README.md)
-* [Model Optimizer](https://docs.openvino.ai/latest/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
+* [Model Optimizer](https://docs.openvino.ai/2023.0/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
 * [Model Downloader](../../../tools/model_tools/README.md)

@@ -15,13 +15,13 @@ encoding the resulting (previous) frames or running further inference, like some
 the face detection results.
 There are important performance caveats though, for example the tasks that run in parallel should try to avoid
 oversubscribing the shared compute resources.
-As another example, if the inference is performed on the HDDL, and the CPU is essentially idle,
+As another example, if the inference is performed on the iGPU, and the CPU is essentially idle,
 then it makes sense to do things on the CPU in parallel. But if the inference is performed say on the GPU,
 then there is little gain from doing the (resulting video) encoding on the same GPU in parallel,
 because the device is already busy.
 
 This and other performance implications and tips for the Async API are covered in the
-[Optimization Guide](https://docs.openvino.ai/latest/_docs_optimization_guide_dldt_optimization_guide.html).
+[Optimization Guide](https://docs.openvino.ai/2023.0/_docs_optimization_guide_dldt_optimization_guide.html).
 
 Other demo objectives are:
 
@@ -40,7 +40,7 @@ Async API operates with a notion of the "Infer Request" that encapsulates the in
 
 ## Model API
 
-The demo utilizes model wrappers, adapters and pipelines from [Python* Model API](../../common/python/openvino/model_zoo/model_api/README.md).
+The demo utilizes model wrappers, adapters and pipelines from [Python* Model API](../../common/python/model_zoo/model_api/README.md).
 
 The generalized interface of wrappers with its unified results representation provides the support of multiple different object detection model topologies in one demo.
 
@@ -89,13 +89,11 @@ omz_converter --list models.lst
   - face-detection-adas-0001
   - face-detection-retail-0004
   - face-detection-retail-0005
-  - face-detection-retail-0044
   - faster-rcnn-resnet101-coco-sparse-60-0001
   - faster_rcnn_inception_resnet_v2_atrous_coco
   - faster_rcnn_resnet50_coco
   - pedestrian-and-vehicle-detector-adas-0001
   - pedestrian-detection-adas-0002
-  - pelee-coco
   - person-detection-0106
   - person-detection-0200
   - person-detection-0201
@@ -113,8 +111,6 @@ omz_converter --list models.lst
   - product-detection-0001
   - retinanet-tf
   - rfcn-resnet101-coco-tf
-  - ssd300
-  - ssd512
   - ssd_mobilenet_v1_coco
   - ssd_mobilenet_v1_fpn_coco
   - ssd-resnet34-1200-onnx
@@ -129,7 +125,6 @@ omz_converter --list models.lst
   - ultra-lightweight-face-detection-rfb-320
   - ultra-lightweight-face-detection-slim-320
 * architecture_type = yolo
-  - mobilefacedet-v1-mxnet
   - mobilenet-yolo-v4-syg
   - person-vehicle-bike-detection-crossroad-yolov3-1020
   - yolo-v1-tiny-tf
@@ -188,8 +183,8 @@ Options:
                         Optional. Specify the model adapter. Default is
                         openvino.
   -d DEVICE, --device DEVICE
-                        Optional. Specify the target device to infer on; CPU,
-                        GPU, HDDL or MYRIAD is acceptable. The demo
+                        Optional. Specify the target device to infer on; CPU or
+                        GPU is acceptable. The demo
                         will look for a suitable plugin for device specified.
                         Default value is CPU.
 
@@ -233,7 +228,7 @@ Inference options:
 Input/output options:
   --loop                Optional. Enable reading the input in a loop.
   -o OUTPUT, --output OUTPUT
-                        Optional. Name of the output file(s) to save.
+                        Optional. Name of the output file(s) to save. Frames of odd width or height can be truncated. See https://github.com/opencv/opencv/pull/24086
   -limit OUTPUT_LIMIT, --output_limit OUTPUT_LIMIT
                         Optional. Number of frames to store in output.
                         If 0 is set, all frames are stored.
@@ -270,7 +265,7 @@ You can use the following command to do inference on GPU with a pre-trained obje
 python3 object_detection_demo.py \
   -d GPU \
   -i <path_to_video>/inputVideo.mp4 \
-  -m <path_to_model>/ssd300.xml \
+  -m <path_to_model>/efficientdet-d0-tf.xml \
   -at ssd \
   --labels <omz_dir>/data/dataset_classes/voc_20cl_bkgr.txt
 ```
@@ -300,7 +295,7 @@ To avoid disk space overrun in case of continuous input stream, like camera, you
 
 ## Running with OpenVINO Model Server
 
-You can also run this demo with model served in [OpenVINO Model Server](https://github.com/openvinotoolkit/model_server). Refer to [`OVMSAdapter`](../../common/python/openvino/model_zoo/model_api/adapters/ovms_adapter.md) to learn about running demos with OVMS.
+You can also run this demo with model served in [OpenVINO Model Server](https://github.com/openvinotoolkit/model_server). Refer to [`OVMSAdapter`](../../common/python/model_zoo/model_api/adapters/ovms_adapter.md) to learn about running demos with OVMS.
 
 Exemplary command:
 
@@ -332,6 +327,6 @@ You can use these metrics to measure application-level performance.
 ## See Also
 
 * [Open Model Zoo Demos](../../README.md)
-* [Model Optimizer](https://docs.openvino.ai/latest/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
+* [Model Optimizer](https://docs.openvino.ai/2023.0/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
 * [Model Downloader](../../../tools/model_tools/README.md)
 * [OpenVINO Model Server](https://github.com/openvinotoolkit/model_server)

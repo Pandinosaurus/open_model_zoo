@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2022 Intel Corporation
+// Copyright (C) 2018-2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 //
 
@@ -35,7 +35,8 @@ const T getMatValue(const cv::Mat& mat, size_t h, size_t w, size_t c) {
 * @param tensor - Tensor object which to be filled by an image data.
 * @param batchIndex - batch index of an image inside of the blob.
 */
-static UNUSED void matToTensor(const cv::Mat& mat, const ov::Tensor& tensor, int batchIndex = 0) {
+static UNUSED void matToTensor(const cv::Mat &mat, ov::Tensor &tensor,
+                               int batchIndex = 0) {
     ov::Shape tensorShape = tensor.get_shape();
     static const ov::Layout layout("NCHW");
     const size_t width = tensorShape[ov::layout::width_idx(layout)];
@@ -96,11 +97,10 @@ static UNUSED ov::Tensor wrapMat2Tensor(const cv::Mat& mat) {
         throw std::runtime_error("Doesn't support conversion from not dense cv::Mat");
     }
     auto precision = isMatFloat ? ov::element::f32 : ov::element::u8;
-    auto allocator = std::make_shared<SharedTensorAllocator>(mat);
-    return ov::Tensor(precision, ov::Shape{ 1, height, width, channels }, ov::Allocator(allocator));
+    return ov::Tensor(precision, ov::Shape{ 1, height, width, channels }, SharedMatAllocator{mat});
 }
 
-static inline void resize2tensor(const cv::Mat& mat, const ov::Tensor& tensor) {
+static inline void resize2tensor(const cv::Mat &mat, ov::Tensor &tensor) {
     static const ov::Layout layout{"NHWC"};
     const ov::Shape& shape = tensor.get_shape();
     cv::Size size{int(shape[ov::layout::width_idx(layout)]), int(shape[ov::layout::height_idx(layout)])};
@@ -111,21 +111,80 @@ static inline void resize2tensor(const cv::Mat& mat, const ov::Tensor& tensor) {
     cv::resize(mat, cv::Mat{size, CV_8UC3, tensor.data()}, size);
 }
 
-static inline ov::Layout getLayoutFromShape(const ov::Shape& shape) {
+struct IntervalCondition {
+    using DimType = size_t;
+    using IndexType = size_t;
+    using ConditionChecker = std::function<bool(IndexType, const ov::PartialShape&)>;
+
+    template<class Cond>
+    constexpr IntervalCondition(IndexType i1, IndexType i2, Cond c) :
+        impl([=](IndexType i0, const ov::PartialShape& shape) {
+            return c(shape[i0].get_max_length(), shape[i1].get_max_length()) && c(shape[i0].get_max_length(), shape[i2].get_max_length());})
+    {}
+    bool operator() (IndexType i0, const ov::PartialShape& shape) const { return impl(i0, shape); }
+private:
+    ConditionChecker impl;
+};
+
+template <template<class> class Cond, class ...Args>
+IntervalCondition makeCond(Args&&...args) {
+    return IntervalCondition(std::forward<Args>(args)..., Cond<IntervalCondition::DimType>{});
+}
+using LayoutCondition = std::tuple<size_t/*dim index*/, IntervalCondition, std::string>;
+
+static inline std::tuple<bool, ov::Layout> makeGuesLayoutFrom4DShape(const ov::PartialShape& shape) {
+    // at the moment we make assumption about NCHW & NHCW only
+    // if hypothetical C value is less than hypothetical H and W - then
+    // out assumption is correct and we pick a corresponding layout
+    static const std::array<LayoutCondition, 2> hypothesisMatrix {{
+        {1, makeCond<std::less_equal>(2, 3), "NCHW"},
+        {3, makeCond<std::less_equal>(1, 2), "NHWC"}
+    }};
+    for (const auto &h : hypothesisMatrix) {
+
+        auto channel_index = std::get<0>(h);
+        const auto &cond = std::get<1>(h);
+        if (cond(channel_index, shape)) {
+            return std::make_tuple(true, ov::Layout{std::get<2>(h)});
+        }
+    }
+    return {false, ov::Layout{}};
+}
+
+static inline ov::Layout getLayoutFromShape(const ov::PartialShape& shape) {
     if (shape.size() == 2) {
         return "NC";
     }
-    else if (shape.size() == 3) {
-        return (shape[0] >= 1 && shape[0] <= 4) ? "CHW" :
-                                                  "HWC";
+    if (shape.size() == 3) {
+        if (shape[0] == 1) {
+            return "NHW";
+        }
+        if (shape[2] == 1) {
+            return "HWN";
+        }
+        throw std::runtime_error("Can't guess layout for " + shape.to_string());
     }
-    else if (shape.size() == 4) {
-        return (shape[1] >= 1 && shape[1] <= 4) ? "NCHW" :
-                                                  "NHWC";
+    if (shape.size() == 4) {
+        if (ov::Interval{1, 4}.contains(shape[1].get_interval())) {
+            return "NCHW";
+        }
+        if (ov::Interval{1, 4}.contains(shape[3].get_interval())) {
+            return "NHWC";
+        }
+        if (shape[1] == shape[2]) {
+            return "NHWC";
+        }
+        if (shape[2] == shape[3]) {
+            return "NCHW";
+        }
+        bool guesResult = false;
+        ov::Layout guessedLayout;
+        std::tie(guesResult, guessedLayout) = makeGuesLayoutFrom4DShape(shape);
+        if (guesResult) {
+            return guessedLayout;
+        }
     }
-    else {
-        throw std::runtime_error("Usupported " + std::to_string(shape.size()) + "D shape");
-    }
+    throw std::runtime_error("Usupported " + std::to_string(shape.size()) + "D shape");
 }
 
 /**

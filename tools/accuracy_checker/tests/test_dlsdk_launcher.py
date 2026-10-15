@@ -1,5 +1,5 @@
 """
-Copyright (c) 2018-2022 Intel Corporation
+Copyright (c) 2018-2024 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,19 +16,19 @@ limitations under the License.
 
 import pytest
 
-pytest.importorskip('openvino.tools.accuracy_checker.launcher.dlsdk_launcher')
+pytest.importorskip('accuracy_checker.launcher.dlsdk_launcher')
 import cv2
 import numpy as np
 
 from pathlib import Path
 from unittest.mock import PropertyMock
-from openvino.tools.accuracy_checker.config import ConfigError
-from openvino.tools.accuracy_checker.launcher import DLSDKLauncher
-from openvino.tools.accuracy_checker.launcher.dlsdk_launcher_config import DLSDKLauncherConfigValidator
-from openvino.tools.accuracy_checker.launcher.launcher import create_launcher
+from accuracy_checker.config import ConfigError
+from accuracy_checker.launcher import DLSDKLauncher
+from accuracy_checker.launcher.dlsdk_launcher_config import DLSDKLauncherConfigValidator
+from accuracy_checker.launcher.launcher import create_launcher
 from tests.common import update_dict
-from openvino.tools.accuracy_checker.data_readers import DataRepresentation
-from openvino.tools.accuracy_checker.utils import contains_all
+from accuracy_checker.data_readers import DataRepresentation
+from accuracy_checker.utils import contains_all
 try:
     import ngraph as ng
 except ImportError:
@@ -37,6 +37,11 @@ except ImportError:
 
 def no_available_myriad():
     return True
+
+
+def no_available_gpu():
+    from openvino import Core
+    return 'GPU' not in Core().available_devices
 
 
 def has_layers():
@@ -56,7 +61,7 @@ def mock_inference_engine(mocker):
 @pytest.fixture()
 def mock_inputs(mocker):
     mocker.patch(
-        'openvino.tools.accuracy_checker.launcher.input_feeder.InputFeeder._parse_inputs_config',
+        'accuracy_checker.launcher.input_feeder.InputFeeder._parse_inputs_config',
         return_value=({}, ['data'], None)
     )
 
@@ -113,6 +118,36 @@ def get_onnx_test_model(model_dir, config_update=None):
         config.update(config_update)
 
     return create_launcher(config)
+
+
+def test_bounded_initializes_unbounded_shape_before_dlsdk_load(mocker):
+    launcher = DLSDKLauncher.__new__(DLSDKLauncher)
+    launcher._device = 'NPU'
+    launcher._partial_shapes = {'pixel_values': [-1, 3, -1, -1]}
+    launcher.dynamic_shapes_policy = 'bounded'
+    launcher.is_dynamic = True
+    launcher.dyn_input_layers = []
+    launcher._reshape_input = mocker.Mock()
+
+    launcher.initialize_undefined_shapes([{'pixel_values': np.zeros((1, 3, 224, 224), dtype=np.float32)}])
+
+    launcher._reshape_input.assert_called_once_with({'pixel_values': (1, 3, 224, 224)})
+    assert not launcher.is_dynamic
+
+
+def test_bounded_keeps_bounded_shape_dlsdk_initialization(mocker):
+    launcher = DLSDKLauncher.__new__(DLSDKLauncher)
+    launcher._device = 'NPU'
+    launcher._partial_shapes = {'pixel_values': [(1, 4), 3, (224, 512), (224, 512)]}
+    launcher.dynamic_shapes_policy = 'bounded'
+    launcher.is_dynamic = True
+    launcher.load_network = mocker.Mock()
+    launcher.exec_network = mocker.Mock()
+
+    launcher.initialize_undefined_shapes([{'pixel_values': np.zeros((1, 3, 224, 224), dtype=np.float32)}])
+
+    launcher.load_network.assert_not_called()
+    launcher.exec_network.infer.assert_called_once()
 
 
 def get_image(image_path, input_shape):
@@ -177,6 +212,7 @@ class TestDLSDKLauncherInfer:
 
 @pytest.mark.skipif(ng is None and not has_layers(), reason='no functionality to set affinity')
 class TestDLSDKLauncherAffinity:
+    @pytest.mark.skipif(no_available_gpu(), reason='no GPU')
     @pytest.mark.usefixtures('mock_affinity_map_exists')
     def test_dlsdk_launcher_valid_affinity_map(self, mocker, models_dir):
         affinity_map = {'conv1': 'GPU'}
@@ -184,9 +220,8 @@ class TestDLSDKLauncherAffinity:
             affinity_map.update({
                 'conv1/Dims294/copy_const': 'GPU'
             })
-
         mocker.patch(
-            'openvino.tools.accuracy_checker.launcher.dlsdk_launcher.read_yaml', return_value=affinity_map
+            'accuracy_checker.launcher.dlsdk_launcher.read_yaml', return_value=affinity_map
         )
 
         dlsdk_test_model = get_dlsdk_test_model(models_dir, {
@@ -209,7 +244,7 @@ class TestDLSDKLauncherAffinity:
         affinity_map = {'conv1': 'GPU'}
 
         mocker.patch(
-            'openvino.tools.accuracy_checker.launcher.dlsdk_launcher.read_yaml', return_value=affinity_map
+            'accuracy_checker.launcher.dlsdk_launcher.read_yaml', return_value=affinity_map
         )
 
         with pytest.raises(ConfigError):
@@ -220,7 +255,7 @@ class TestDLSDKLauncherAffinity:
         affinity_map = {'none-existing-layer': 'CPU'}
 
         mocker.patch(
-            'openvino.tools.accuracy_checker.launcher.dlsdk_launcher.read_yaml', return_value=affinity_map
+            'accuracy_checker.launcher.dlsdk_launcher.read_yaml', return_value=affinity_map
         )
 
         with pytest.raises(ConfigError):
@@ -337,7 +372,7 @@ class TestDLSDKLauncherConfig:
 
         with pytest.raises(ValueError):
             mocker.patch(
-                'openvino.tools.accuracy_checker.launcher.dlsdk_launcher.DLSDKLauncher.inputs',
+                'accuracy_checker.launcher.dlsdk_launcher.DLSDKLauncher.inputs',
                 new_callable=PropertyMock(return_value={'data1': [3, 227, 227], 'data2': [3, 227, 227]})
             )
             create_launcher(launcher_config)

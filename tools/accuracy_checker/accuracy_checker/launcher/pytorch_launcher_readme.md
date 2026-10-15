@@ -1,0 +1,82 @@
+# How to configure PyTorch launcher
+
+PyTorch launcher is one of the supported wrappers for easily launching models within Accuracy Checker tool. This launcher allows to execute models using PyTorch\* framework as inference backend.
+
+For enabling PyTorch launcher you need to add `framework: pytorch` in launchers section of your configuration file and provide following parameters:
+
+* `device` - specifies which device will be used for infer (`cpu`, `cuda` and so on).
+* `module`- PyTorch network module for loading.
+* `checkpoint` - pre-trained model checkpoint (Optional).
+* `checkpoint_url` - url link to pre-trained model checkpoint (Optional).
+* `checkpoint_weights_only` - boolean, use weights only model checkpoint (Optional, default `True`).
+* `state_key` - pre-trained model checkpoint state key (Optional).
+* `python_path` - appendix for PYTHONPATH for making network module visible in current python environment (Optional).
+* `module_args` - list of positional arguments for network module (Optional).
+* `module_kwargs` - dictionary (`key`: `value` where `key` is argument name, `value` is argument value) which represent network module keyword arguments.
+* `init_method` - method name to be called for module initialization (Optional).
+* `adapter` - approach how raw output will be converted to representation of dataset problem, some adapters can be specific to framework. You can find detailed instruction how to use adapters [here](../adapters/README.md).
+* `batch` - batch size for running model (Optional, default 1).
+* `use_torch_compile` - boolean, use torch.compile to optimize the module code (Optional, default `False`)
+* `torch_compile_kwargs` - dictionary of keyword arguments to pass to torch.compile (Optional, default `{}`)
+* `transformers_class` - transformers class name to load pre-trained model with `module` name. (Optional).
+* `use_detectron2_wrapper` - boolean, wrap Detectron2 models in a compatibility adapter that converts between accuracy_checker's tensor-based inputs/outputs and Detectron2's dict-based interface, and loads fully-built model checkpoints without invoking the module constructor (Optional, default `False`). See [Detectron2 wrapper](#detectron2-wrapper) section below for details.
+
+In turn if you model has several inputs you need to specify them in config, using specific parameter: `inputs`.
+Each input description should has following info:
+  * `name` - input layer name in network
+  * `type` - type of input values, it has impact on filling policy. Available options:
+    * `CONST_INPUT` - input will be filled using constant provided in config. It also requires to provide `value`.
+    * `IMAGE_INFO` - specific key for setting information about input shape to layer (used in Faster RCNN based topologies). You do not need to provide `value`, because it will be calculated in runtime. Format value is list with `N` elements of the form `[H, W, S]`, where `N` is batch size, `H` - original image height, `W` - original image width, `S` - scale of original image (default 1).
+    * `ORIG_IMAGE_INFO` - specific key for setting information about original image size before preprocessing.
+    * `PROCESSED_IMAGE_INFO` - specific key for setting information about input size after preprocessing.
+    * `SCALE_FACTOR` - specific key for setting information about image scale factor defined as `[SCALE_Y, SCALE_X]`, where `SCALE_Y` = `<resized_image_height>/<original_image_height`, `SCALE_X` = `<resized_image_width> / <original_image_width>`
+    * `IGNORE_INPUT` - input which should be stayed empty during evaluation.
+    * `INPUT` - network input for main data stream (e. g. images). If you have several data inputs, you should provide regular expression for identifier as `value` for specifying which one data should be provided in specific input.
+  * `shape` - shape of input layer described as comma-separated of all dimensions size except batch size.
+
+    Optionally you can determine `layout` in case when your model was trained with non-standard data layout (For PyTorch default layout is `NCHW`) and`precision` (Supported precisions: `FP32` - float, `FP16` - signed shot, `U8`  - unsigned char, `U16` - unsigned short int, `I8` - signed char, `I16` - short int, `I32` - int, `I64` - long int).
+
+If you model has several outputs you also need to specify their names in config for ability to get their values in adapter using option `output_names`.
+
+PyTorch launcher config example (demonstrates how to run AlexNet model from [torchvision](https://pytorch.org/vision/stable/models.html)):
+
+```yml
+launchers:
+  - framework: pytorch
+    device: CPU
+    module: torchvision.models.alexnet
+
+    module_kwargs:
+      pretrained: True
+
+    use_torch_compile: true
+    torch_compile_kwargs:
+      backend: openvino
+      options:
+        device : cpu
+
+    adapter: classification
+```
+
+## Detectron2 wrapper
+
+[Detectron2](https://github.com/facebookresearch/detectron2) models (e.g. `detectron2.modeling.GeneralizedRCNN`) take a list of dicts with an `image` key as input and return `Instances` objects, which is incompatible with the tensor-in/tensor-out interface the generic PyTorch launcher expects. Setting `use_detectron2_wrapper: True` wraps the loaded module in `Detectron2Wrapper`, which:
+* converts batched tensor input into the `[{"image": tensor}, ...]` format expected by Detectron2 models;
+* calls the wrapped model and extracts `pred_boxes`, `pred_classes`, `pred_masks` and `scores` from the returned `Instances` objects into plain tensors;
+* loads checkpoints that contain a fully constructed model object directly, without calling the `module` constructor (some Detectron2 checkpoints, e.g. `.pth` files produced by `torch.save(model, ...)`, contain such prebuilt model objects instead of a state dict).
+
+PyTorch launcher config example (demonstrates how to run a Detectron2 Mask R-CNN model):
+
+```yml
+launchers:
+  - framework: pytorch
+    device: CPU
+    module: detectron2.modeling.GeneralizedRCNN
+    python_path: /path/to/detectron2
+    checkpoint: /path/to/model.pth
+    checkpoint_weights_only: False
+    use_detectron2_wrapper: True
+
+    adapter: detectron2
+```
+

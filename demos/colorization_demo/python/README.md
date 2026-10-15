@@ -40,26 +40,22 @@ omz_converter --list models.lst
 Running the application with the `-h` option yields the following usage message:
 
 ```
-usage: colorization_demo.py [-h] -m MODEL [-d DEVICE] -i INPUT [--loop]
-                            [-o OUTPUT] [-limit OUTPUT_LIMIT]
-                            [--no_show] [-v] [-u UTILIZATION_MONITORS]
+usage: colorization_demo.py [-h] -m MODEL [-d DEVICE] -i INPUT [--loop] [-o OUTPUT] [-limit OUTPUT_LIMIT] [--no_show] [-u UTILIZATION_MONITORS]
 
 Options:
   -h, --help            Help with the script.
   -m MODEL, --model MODEL
                         Required. Path to .xml file with pre-trained model.
   -d DEVICE, --device DEVICE
-                        Optional. Specify target device for infer: CPU, GPU,
-                        HDDL or MYRIAD. Default: CPU
+                        Optional. Specify a device to infer on (the list of available devices is shown below). Use '-d HETERO:<comma-separated_devices_list>' format to specify HETERO plugin. Use '-d MULTI:<comma-separated_devices_list>'
+                        format to specify MULTI plugin. Default is CPU
   -i INPUT, --input INPUT
-                        Required. An input to process. The input must be a single image,
-                        a folder of images, video file or camera id.
+                        Required. An input to process. The input must be a single image, a folder of images, video file or camera id.
   --loop                Optional. Enable reading the input in a loop.
   -o OUTPUT, --output OUTPUT
-                        Optional. Name of the output file(s) to save.
+                        Optional. Name of the output file(s) to save. Frames of odd width or height can be truncated. See https://github.com/opencv/opencv/pull/24086
   -limit OUTPUT_LIMIT, --output_limit OUTPUT_LIMIT
-                        Optional. Number of frames to store in output.
-                        If 0 is set, all frames are stored.
+                        Optional. Number of frames to store in output. If 0 is set, all frames are stored.
   --no_show             Optional. Don't show output.
   -u UTILIZATION_MONITORS, --utilization_monitors UTILIZATION_MONITORS
                         Optional. List of monitors to show initially.
@@ -96,5 +92,5 @@ You can use both of these metrics to measure application-level performance.
 ## See Also
 
 * [Open Model Zoo Demos](../../README.md)
-* [Model Optimizer](https://docs.openvino.ai/latest/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
+* [Model Optimizer](https://docs.openvino.ai/2023.0/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
 * [Model Downloader](../../../tools/model_tools/README.md)

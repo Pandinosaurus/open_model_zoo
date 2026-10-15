@@ -1,8 +1,12 @@
-# Copyright (C) 2018-2020 Intel Corporation
+# Copyright (C) 2018-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 #
 
-cmake_minimum_required(VERSION 3.10)
+if(WIN32)
+    cmake_minimum_required(VERSION 3.16)
+else()
+    cmake_minimum_required(VERSION 3.13)
+endif()
 
 # Multi config generators such as Visual Studio ignore CMAKE_BUILD_TYPE. Multi config generators are configured with
 # CMAKE_CONFIGURATION_TYPES, but limiting options in it completely removes such build options
@@ -80,7 +84,8 @@ function(add_demos_to_build)
                     if(BUILD_SAMPLE_NAME)
                         list(FIND BUILD_SAMPLE_NAME ${dir} index)
                     endif()
-                    if(index EQUAL -1)
+                    # Skip GAPI demos if OpenCV was built without GAPI
+                    if(index EQUAL -1 OR (sub_dir MATCHES ".*cpp_gapi.*" AND GAPI_DEMO_DISABLED))
                         message(STATUS "${dir} SKIPPED")
                     else()
                         # Include subdirectory to the project.
@@ -142,11 +147,20 @@ find_package(OpenVINO REQUIRED COMPONENTS Runtime)
 
 add_subdirectory(thirdparty/gflags)
 add_subdirectory(common/cpp)
-# TODO: remove wrapping if after OpenCV3 is dropped
-if(OpenCV_VERSION VERSION_GREATER_EQUAL 4.5.3)
-    find_package(OpenCV REQUIRED COMPONENTS gapi)
-    add_subdirectory(common/cpp_gapi)
+
+find_package(OpenCV QUIET COMPONENTS gapi)
+if(NOT OpenCV_FOUND)
+    message(WARNING "No suitable OpenCV version detected, GAPI demos skipped")
+    set(GAPI_DEMO_DISABLED ON)
+else()
+    if(OpenCV_VERSION VERSION_LESS "4.8")
+        message(WARNING "OpenCV version lower than 4.8 detected, GAPI demos skipped")
+        set(GAPI_DEMO_DISABLED ON)
+    else()
+        add_subdirectory(common/cpp_gapi)
+    endif()
 endif()
+
 add_subdirectory(multi_channel_common/cpp)
 
 # collect all samples subdirectories

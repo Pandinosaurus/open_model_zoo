@@ -1,22 +1,23 @@
 # progress bar
 tqdm>=4.54.1
 
-# image reading and preprocessing
-# networkx version upperbound in scikit-image is conflicted
-networkx~=2.5;python_version<"3.7"
-networkx<2.8.1;python_version>="3.7"
-# note: python 3.6 wheels is not available since 0.18
-scikit-image~=0.17.2;python_version<"3.7"
-scikit-image>=0.19.2;python_version>="3.7"
+# CTC beam search without an external language model
+pyctcdecode>=0.5.0
 
-# there is issue with resolving versions for python3.6 and python3.7, pin to specific version of lib
-imagecodecs~=2020.5.30;python_version<"3.7"
-imagecodecs~=2021.11.20;python_version=="3.7"
-imagecodecs~=2022.2.22;python_version>="3.8"
+# image reading and preprocessing
+# 4.6.0.66 is incompatible with numpy>=2.0 (numpy is allowed up to <2.1.0 by requirements-core.in)
+opencv-python==4.10.0.84
+# nncf's upperbound: https://github.com/openvinotoolkit/nncf/blob/1de67217adf60a29afa310edf4a5f4d36314446a/setup.py#L104
+networkx<3.6
+scikit-image==0.18.3;python_version<"3.12"
+scikit-image==0.25.2;python_version>="3.12"
+
+imagecodecs~=2022.2.22;python_version<="3.10"
+imagecodecs~=2025.3.30;python_version>="3.11"
 
 # reid
-# python3.6 dropped in v1.0
-scikit-learn~=0.24.1
+scikit-learn>=0.24.1;python_version<"3.11"
+scikit-learn>=1.2.0;python_version>="3.11"
 
 # cpu extension usage
 py-cpuinfo>=7.0.0
@@ -27,31 +28,35 @@ pyclipper>=1.2.1
 
 # brain tumor segmentation
 nibabel>=3.2.1
-scipy >=1.5.4,<=1.8.0
+# nncf's upperbound: https://github.com/openvinotoolkit/nncf/blob/a8af39627647ddbb89ef33cf42ff42e9c048b981/setup.py#L106
+scipy>=1.5.4
 
 # dicom images reading
 pydicom>=2.1.2
 
 # nlp, tokenization
 sentencepiece>=0.1.95
-tokenizers~=0.10.1;python_version<"3.7"
-tokenizers>=0.10.1;python_version>="3.7"
-transformers>=4.5,<4.17;python_version<"3.7"
-transformers>=4.5;python_version>="3.7"
+tokenizers>=0.10.1
+transformers>=4.5
 
 nltk>=3.5
 
 # DNA sequence matching
 parasail>=1.2.4;platform_system!="Windows"
 parasail~=1.2.4;platform_system=="Windows"
-fast-ctc-decode>=0.2.5
 
 # raw image formats processing
-rawpy>=0.16.0;python_version<"3.7"
-rawpy~=0.17.1;python_version>="3.7"
+rawpy>=0.17.1
 
 # lmdb dataset support
 lmdb>=1.2.1
 
 # pandas datasets support
-pandas>=1.1.5,<=1.3.5
+pandas>=1.1.5,<2.4
+
+# word-based representations of numbers
+inflect>=7.3.0
+
+# visualization
+matplotlib==3.8.4;python_version<"3.12"
+matplotlib==3.9.3;python_version>="3.12"

@@ -1,7 +1,7 @@
-# [OpenVINO™ Toolkit](https://docs.openvino.ai/latest/index.html) - Open Model Zoo repository
-[![Stable release](https://img.shields.io/badge/version-2022.2.0-green.svg)](https://github.com/openvinotoolkit/open_model_zoo/releases/tag/2022.2.0)
-[![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/open_model_zoo/community)
-[![Apache License Version 2.0](https://img.shields.io/badge/license-Apache_2.0-green.svg)](LICENSE)
+# [OpenVINO™ Toolkit](https://docs.openvino.ai/2023.0/index.html) - Open Model Zoo repository
+
+> [!NOTE]
+> Open Model Zoo is in maintenance mode as a source of models. Check out model tutorials in [Jupyter notebooks](https://github.com/openvinotoolkit/openvino_notebooks).
 
 This repository includes optimized deep learning models and a set of demos to expedite development of high-performance deep learning inference applications. Use these free pre-trained models instead of training your own models to speed-up the development and production deployment process.
 
@@ -17,10 +17,18 @@ Intel is committed to the respect of human rights and avoiding complicity in hum
 ## License
 Open Model Zoo is licensed under [Apache License Version 2.0](LICENSE).
 
+## Telemetry
+OpenVINO™ collects software performance and usage data for the purpose of improving OpenVINO™ tools. This data is collected directly by OpenVINO™ or through the use of Google Analytics 4.
+You can opt-out at any time by running the command:
+
+``` bash
+opt_in_out --opt_out
+```
+
 ## Online Documentation
 * [OpenVINO™ Release Notes](https://software.intel.com/en-us/articles/OpenVINO-RelNotes)
-* [Pre-Trained Models](https://docs.openvino.ai/latest/model_zoo.html)
-* [Demos and Samples](https://docs.openvino.ai/latest/omz_demos.html)
+* [Pre-Trained Models](https://docs.openvino.ai/2023.0/model_zoo.html)
+* [Demos and Samples](https://docs.openvino.ai/2023.0/omz_demos.html)
 
 ## Other Usage Examples
 * [Open Visual Cloud](https://www.intel.com/content/www/us/en/developer/articles/technical/open-visual-cloud.html)

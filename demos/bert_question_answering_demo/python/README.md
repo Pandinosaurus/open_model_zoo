@@ -10,7 +10,7 @@ The text is then used to search answers for user-provided questions.
 
 ## Model API
 
-The demo utilizes model wrappers, adapters and pipelines from [Python* Model API](../../common/python/openvino/model_zoo/model_api/README.md).
+The demo utilizes model wrappers, adapters and pipelines from [Python* Model API](../../common/python/model_zoo/model_api/README.md).
 
 The generalized interface of wrappers with its unified results representation provides the support of multiple different question answering model topologies in one demo.
 
@@ -131,7 +131,7 @@ The demo will use a wiki-page about the Bert character to answer your questions 
 
 ## Running with OpenVINO Model Server
 
-You can also run this demo with model served in [OpenVINO Model Server](https://github.com/openvinotoolkit/model_server). Refer to [`OVMSAdapter`](../../common/python/openvino/model_zoo/model_api/adapters/ovms_adapter.md) to learn about running demos with OVMS.
+You can also run this demo with model served in [OpenVINO Model Server](https://github.com/openvinotoolkit/model_server). Refer to [`OVMSAdapter`](../../common/python/model_zoo/model_api/adapters/ovms_adapter.md) to learn about running demos with OVMS.
 
 Exemplary command:
 
@@ -157,7 +157,7 @@ length of the context plus length of the question (both in tokens), if the resul
 sequence length that the network expects. This is performance (speed) and memory footprint saving option.
 Since some networks are not-reshapable (due to limitations of the internal layers) the reshaping might fail,
 so you will need to run the demo without it.
-Please see general [reshape intro and limitations](https://docs.openvino.ai/latest/_docs_IE_DG_ShapeInference.html)
+Please see general [reshape intro and limitations](https://docs.openvino.ai/2023.0/_docs_IE_DG_ShapeInference.html)
 
 ## Demo Outputs
 
@@ -175,6 +175,6 @@ Thus, for the long texts, the network is called multiple times. The results are 
 ## See Also
 
 * [Open Model Zoo Demos](../../README.md)
-* [Model Optimizer](https://docs.openvino.ai/latest/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
+* [Model Optimizer](https://docs.openvino.ai/2023.0/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html)
 * [Model Downloader](../../../tools/model_tools/README.md)
-* [Benchmark C++ Sample](https://docs.openvino.ai/latest/_inference_engine_samples_benchmark_app_README.html)
+* [Benchmark C++ Sample](https://docs.openvino.ai/2023.0/_inference_engine_samples_benchmark_app_README.html)

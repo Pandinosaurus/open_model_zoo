@@ -1,5 +1,5 @@
 /*
-// Copyright (C) 2020-2022 Intel Corporation
+// Copyright (C) 2020-2024 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ ModelConfig ConfigFactory::getUserConfig(const std::string& flags_d,
             if (flags_nthreads != 0)
                 config.compiledModelConfig.emplace(ov::inference_num_threads.name(), flags_nthreads);
 
-            config.compiledModelConfig.emplace(ov::affinity.name(), ov::Affinity::NONE);
+            config.compiledModelConfig.emplace(ov::hint::enable_cpu_pinning.name(), false);
 
             ov::streams::Num nstreams =
                 deviceNstreams.count(device) > 0 ? ov::streams::Num(deviceNstreams[device]) : ov::streams::AUTO;
@@ -93,7 +93,7 @@ ModelConfig ConfigFactory::getCommonConfig(const std::string& flags_d, uint32_t 
     return config;
 }
 
-std::map<std::string, std::string> ModelConfig::getLegacyConfig() {
+std::map<std::string, std::string> ModelConfig::getLegacyConfig() const {
     std::map<std::string, std::string> config;
     for (const auto& item : compiledModelConfig) {
         config[item.first] = item.second.as<std::string>();

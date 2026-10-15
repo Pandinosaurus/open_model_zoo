@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
- Copyright (C) 2020-2022 Intel Corporation
+ Copyright (C) 2020-2024 Intel Corporation
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ from time import perf_counter
 import wave
 
 import numpy as np
-from openvino.runtime import Core, get_version
+from openvino import Core, get_version
 
 log.basicConfig(format='[ %(levelname)s ] %(message)s', level=log.DEBUG, stream=sys.stdout)
 
@@ -45,7 +45,7 @@ def build_argparser():
     args.add_argument('-m', "--model", type=str, required=True,
                       help="Required. Path to an .xml file with a trained model.")
     args.add_argument("-d", "--device", type=str, default="CPU",
-                      help="Optional. Specify the target device to infer on; CPU, GPU, HDDL or MYRIAD is"
+                      help="Optional. Specify the target device to infer on; CPU or GPU is"
                            " acceptable. The demo will look for a suitable plugin for device specified. "
                            "Default value is CPU")
     args.add_argument('--labels', type=str, default=None,

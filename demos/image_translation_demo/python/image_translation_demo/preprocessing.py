@@ -1,5 +1,5 @@
 """
- Copyright (C) 2020 Intel Corporation
+ Copyright (C) 2020-2024 Intel Corporation
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -18,7 +18,7 @@ import cv2
 def scatter(source, classes, axis=1, base=0, value=1):
     shape = [1, 1, *source.shape]
     shape[axis] = classes
-    label_map = np.full(shape, base, np.int)
+    label_map = np.full(shape, base, np.int32)
     ndim = len(shape)
     expanded_index = []
     for i in range(ndim):
